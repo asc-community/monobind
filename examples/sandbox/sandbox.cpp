@@ -25,15 +25,14 @@ int main(int argc, char* argv[])
 	monobind::assembly assembly(mono.get_domain(), "Dog.dll");
 
 	mono.add_internal_call("Cat::Mew(CatImpl)", cat_mew_func);
-	mono.add_internal_call<void(*)(MonoString*)>("Cat::MewMew(string)", [](MonoString* str)
+	mono.add_internal_call<MonoString*(*)(MonoString*)>("Cat::MewMew(string)", [](MonoString* str)
 	{
-		char* s = mono_string_to_utf8(str);
-		std::string cppstring(s, s + mono_string_length(str));
-		mono_free(s);
-		std::cout << "mew mew: " << cppstring << std::endl;
+		std::cout << "mew mew: " << monobind::to_string(str) << std::endl;
+		return str;
 	});
 
-	assembly.get_method("Cat::MewMew(string)").invoke("hi");
+	auto mewmew = assembly.get_method("Cat::MewMew(string)").as_function<std::string(*)(std::string)>();
+	std::cout << "in C++: " << mewmew("hi!") << std::endl;
 
 	monobind::method method = assembly.get_method("Dog::Type()");
 
@@ -62,7 +61,7 @@ int main(int argc, char* argv[])
 	//Call its default constructor
 	mono_runtime_object_init(dogA);
 
-	auto object_method = assembly.get_method("Dog::Bark(int)").as_function<MonoObject*, int>();
+	auto object_method = assembly.get_method("Dog::Bark(int)").as_function<void(*)(MonoObject*, int)>();
 
 	//Run the method
 	std::cout << "Running the method: Dog::Bark(int)" << std::endl;

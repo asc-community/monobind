@@ -30,6 +30,16 @@
 
 namespace monobind
 {
+    template<typename T>
+    struct internal_get_function_type;
+
+    template<typename R, typename... Args >
+    struct internal_get_function_type<R(*)(Args...)>
+    {
+        using type = std::function<R(Args...)>;
+        using result_type = R;
+    };
+
     template<typename... Args>
     void internal_init_params(MonoDomain* domain, void** current) { }
 
@@ -37,7 +47,10 @@ namespace monobind
     void internal_init_params(MonoDomain* domain, void** current, T&& t, Args&&... other)
     {
         using TypeToConvert = typename std::decay<T>::type;
-        *current = (void*)to_mono_converter<TypeToConvert>::convert(domain, std::forward<T>(t));
+        auto converted = to_mono_converter<TypeToConvert>::convert(domain, std::forward<T>(t));
+        static_assert(std::is_pointer<decltype(converted)>::value, "conversion function must return objects by pointer");
+
+        *current = (void*)converted;
         internal_init_params(domain, current + 1, std::forward<Args>(other)...);
     }
 
@@ -52,7 +65,7 @@ namespace monobind
         {
             MONOBIND_ASSERT(m_native_ptr != nullptr);
         }
-
+        
         MonoMethod* get_pointer()
         {
             return m_native_ptr;
@@ -78,25 +91,35 @@ namespace monobind
         template<typename... Args>
         MonoObject* operator()(MonoObject* object, Args&&... args) const
         {
-            if (sizeof...(args) == 0)
-            {
-                return mono_runtime_invoke(m_native_ptr, object, nullptr, nullptr);
-            }
-            else
-            {
-                std::array<void*, sizeof...(args)> params;
-                internal_init_params(m_domain, params.data(), std::forward<Args>(args)...);
-                return mono_runtime_invoke(m_native_ptr, object, params.data(), nullptr);
-            }
+            std::array<void*, sizeof...(args)> params;
+            internal_init_params(m_domain, params.data(), std::forward<Args>(args)...);
+            return mono_runtime_invoke(m_native_ptr, object, params.data(), nullptr);
         }
 
-        template<typename... Args>
-        std::function<MonoObject*(Args...)> as_function()
+        template<typename FuncPointerType>
+        typename internal_get_function_type<FuncPointerType>::type as_function()
         {
-            return [method = *this](Args&&... args)
+            return [method = *this](auto&&... args)
             {
-                return method.invoke(std::forward<Args>(args)...);
+                using ResultType = typename internal_get_function_type<FuncPointerType>::result_type;
+
+                MonoObject* result = method.invoke(std::forward<decltype(args)>(args)...);
+                if (!std::is_void<ResultType>::value && result == nullptr)
+                {
+                    throw_exception("mono method returned null");
+                }
+                return from_mono_converter<ResultType>::convert(method.m_domain, result);
             };
+        }
+
+        MonoDomain* get_domain()
+        {
+            return m_domain;
+        }
+
+        const MonoDomain* get_domain() const
+        {
+            return m_domain;
         }
     };
 }

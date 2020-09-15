@@ -42,6 +42,10 @@ namespace monobind
         bool add_to_cache(const char* method_signature)
         {
             MonoMethodDesc* desc = mono_method_desc_new(method_signature, false);
+            if (desc == nullptr)
+            {
+                throw_exception("invalid method signature");
+            }
             MonoMethod* method_ptr = mono_method_desc_search_in_image(desc, m_assembly_image);
             if (method_ptr != nullptr)
             {

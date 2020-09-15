@@ -27,3 +27,4 @@ endif()
 
 add_subdirectory(examples/sandbox)
 add_subdirectory(examples/simple_function_call)
+add_subdirectory(examples/method_parameters)

@@ -16,7 +16,7 @@ public class Cat
     public static extern void Mew(CatImpl cat);
 
     [MethodImplAttribute(MethodImplOptions.InternalCall)]
-    public static extern void MewMew(string s);
+    public static extern string MewMew(string s);
 }
 
 public class Dog
@@ -31,7 +31,6 @@ public class Dog
         cat.c = 'x';
         cat.d = 1.43f;
         Cat.Mew(cat);
-        Cat.MewMew("hello world");
     }
 
     public void Bark()
