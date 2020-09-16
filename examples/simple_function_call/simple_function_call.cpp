@@ -15,7 +15,7 @@ int main()
     mono.init_jit("SimpleFunctionCallApp");
 
     // resolve external method in C# code
-    mono.add_internal_call("MonoBindExamples.SimpleFunctionCall::HelloFromCpp()", hello_from_cpp);
+    mono.add_internal_call<void(*)()>("MonoBindExamples.SimpleFunctionCall::HelloFromCpp()", MONOBIND_CALLABLE(hello_from_cpp));
 
     // build csharp library
     monobind::compiler compiler(mono.get_root_dir());
@@ -26,7 +26,7 @@ int main()
     monobind::method method = assembly.get_method("MonoBindExamples.SimpleFunctionCall::HelloFromCSharp()");
 
     // call C# method
-    method.invoke();
+    method.invoke_static<void>();
 
     return 0;
 }

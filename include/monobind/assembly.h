@@ -37,9 +37,9 @@ namespace monobind
         MonoAssembly* m_assembly = nullptr;
         MonoImage* m_assembly_image = nullptr;
 
-        std::map<std::string, MonoMethod*, std::less<>> m_method_cache;
+        mutable std::map<std::string, MonoMethod*, std::less<>> m_method_cache;
 
-        bool add_to_cache(const char* method_signature)
+        bool add_to_cache(const char* method_signature) const
         {
             MonoMethodDesc* desc = mono_method_desc_new(method_signature, false);
             if (desc == nullptr)
@@ -72,27 +72,17 @@ namespace monobind
             }
         }
 
-        MonoAssembly* get_assembly()
+        MonoAssembly* get_assembly() const
         {
             return m_assembly;
         }
 
-        const MonoAssembly* get_assembly() const
-        {
-            return m_assembly;
-        }
-
-        MonoImage* get_image()
+        MonoImage* get_image() const
         {
             return m_assembly_image;
         }
 
-        const MonoImage* get_image() const
-        {
-            return m_assembly_image;
-        }
-
-        method get_method(const char* signature)
+        method get_method(const char* signature) const
         {
             if (!has_method(signature))
             {
@@ -105,7 +95,7 @@ namespace monobind
             }
         }
 
-        bool has_method(const char* signature)
+        bool has_method(const char* signature) const
         {
             auto it = m_method_cache.find(signature);
             if (it != m_method_cache.end())

@@ -9,9 +9,13 @@ struct Cat
 	float d;
 };
 
-void cat_mew_func(Cat cat)
+void cat_mew_func(monobind::object cat)
 {
-	std::cout << "mew from cat: " << "x: " << cat.x << " c: " << cat.c << " d: " << cat.d << std::endl;
+	Cat cat_struct;
+	cat_struct.x = cat["x"];
+	cat_struct.c = cat["c"];
+	cat_struct.d = cat["d"];
+	std::cout << "mew from cat: " << "x: " << cat_struct.x << " c: " << cat_struct.c << " d: " << cat_struct.d << std::endl;
 }
 
 int main(int argc, char* argv[])
@@ -24,10 +28,11 @@ int main(int argc, char* argv[])
 
 	monobind::assembly assembly(mono.get_domain(), "Dog.dll");
 
-	mono.add_internal_call("Cat::Mew(CatImpl)", cat_mew_func);
-	mono.add_internal_call<MonoString*(*)(MonoString*)>("Cat::MewMew(string)", [](MonoString* str)
+	mono.add_internal_call<void(*)(monobind::object)>("Cat::Mew(CatImpl)", MONOBIND_CALLABLE(cat_mew_func));
+
+	mono.add_internal_call<std::string(*)(std::string)>("Cat::MewMew(string)", [](std::string str)
 	{
-		std::cout << "mew mew: " << monobind::to_string(str) << std::endl;
+		std::cout << "mew mew: " << str << std::endl;
 		return str;
 	});
 
@@ -38,7 +43,7 @@ int main(int argc, char* argv[])
 
 	//run the method
 	std::cout << "Running the static method: Dog::Type()" << std::endl;
-	method.invoke();
+	method.invoke_static<void>();
 
 	//Get the class
 	MonoClass* dogclass;
@@ -50,22 +55,13 @@ int main(int argc, char* argv[])
 	}
 
 	//Create a instance of the class
-	MonoObject* dogA;
-	dogA = mono_object_new(mono.get_domain(), dogclass);
-	if (!dogclass)
-	{
-		std::cout << "mono_object_new failed" << std::endl;
-		return 1;
-	}
+	monobind::object dogA(mono.get_domain(), dogclass);
 
-	//Call its default constructor
-	mono_runtime_object_init(dogA);
-
-	auto object_method = assembly.get_method("Dog::Bark(int)").as_function<void(*)(MonoObject*, int)>();
+	auto object_method = assembly.get_method("Dog::Bark(int)");
 
 	//Run the method
 	std::cout << "Running the method: Dog::Bark(int)" << std::endl;
-	object_method(dogA, 3);
+	object_method.invoke_instance<void>(dogA, 3);
 
 	return 0;
 }

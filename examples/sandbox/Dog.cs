@@ -2,8 +2,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-[StructLayout(LayoutKind.Sequential)]
-public struct CatImpl
+public class CatImpl
 {
     public int x;
     public char c;

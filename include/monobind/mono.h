@@ -26,9 +26,109 @@
 #include <monobind/exception_handling.h>
 
 #include <string>
+#include <tuple>
 
 namespace monobind
 {
+    inline MonoDomain* get_current_domain()
+    {
+        return mono_domain_get();
+    }
+
+    #define MONOBIND_CALLABLE(func_name) [](auto... args) -> decltype(auto) { return func_name(std::forward<decltype(args)>(args)...); }
+
+    template<typename T>
+    struct internal_convert_type_to_mono
+    {
+        using result = typename std::conditional<
+            std::is_standard_layout<T>::value,
+            T, decltype(to_mono_converter<T>::convert(std::declval<MonoDomain*>(), std::declval<T>()))
+        >::type;
+    };
+
+    template<>
+    struct internal_convert_type_to_mono<void>
+    {
+        using result = void;
+    };
+
+    template<typename T>
+    class internal_convert_tuple_types_to_mono;
+
+    template<typename T>
+    class internal_convert_tuple_types_to_mono<std::tuple<T>>
+    {
+        using result_type = typename internal_convert_type_to_mono<T>::result;
+    public:
+        using result = std::tuple<result_type>;
+    };
+
+    template<typename T, typename... Args>
+    class internal_convert_tuple_types_to_mono<std::tuple<T, Args...>>
+    {
+        template<typename... Args1, typename... Args2>
+        static auto merge_tuples(std::tuple<Args1...>*, std::tuple<Args2...>*) -> std::tuple<Args1..., Args2...>;
+
+        using result_head_tuple = typename internal_convert_tuple_types_to_mono<std::tuple<T>>::result;
+        using result_tail_tuple = typename internal_convert_tuple_types_to_mono<std::tuple<Args...>>::result;
+    public:
+        using result = decltype(merge_tuples((result_head_tuple*)nullptr, (result_tail_tuple*)nullptr));
+    };
+
+    template<>
+    class internal_convert_tuple_types_to_mono<std::tuple<>>
+    {
+    public:
+        using result = std::tuple<>;
+    };
+
+    template<typename T>
+    struct internal_function_wrapper;
+
+    template<typename R, typename... Args>
+    class internal_function_wrapper<R(*)(Args...)>
+    {
+        template<typename F, typename MonoReturnType, typename... MonoArgs>
+        static auto invoke_inner_function(MonoArgs&&... args)
+            -> typename std::enable_if<!std::is_void<MonoReturnType>::value, MonoReturnType>::type
+        {
+            MonoDomain* domain = get_current_domain();
+            void* dummy = nullptr;
+            auto result = reinterpret_cast<F*>(dummy)->operator()(from_mono_converter<Args>::convert(domain, args)...);
+            return to_mono_converter<R>::convert(domain, std::move(result));
+        }
+
+        template<typename F, typename MonoReturnType, typename... MonoArgs>
+        static auto invoke_inner_function(MonoArgs&&... args) 
+            -> typename std::enable_if<std::is_void<MonoReturnType>::value, void>::type
+        {
+            MonoDomain* domain = get_current_domain();
+            void* dummy = nullptr;
+            reinterpret_cast<F*>(dummy)->operator()(from_mono_converter<Args>::convert(domain, args)...);
+        }
+
+        using argument_list_tuple = typename internal_convert_tuple_types_to_mono<std::tuple<Args...>>::result;
+        using return_type = typename internal_convert_type_to_mono<R>::result;
+
+        template<typename F, typename MonoReturnType, typename... MonoArgs>
+        static auto get_impl(MonoReturnType*, std::tuple<MonoArgs...>*)
+        {
+            using PureFuncType = MonoReturnType(*)(MonoArgs...);
+            PureFuncType pure_func = [](MonoArgs... args) -> MonoReturnType
+            {
+                return invoke_inner_function<F, MonoReturnType, MonoArgs...>(std::forward<MonoArgs>(args)...);
+            };
+            return pure_func;
+        }
+
+    public:
+        template<typename F>
+        static auto get()
+        { 
+            return get_impl<F>((return_type*)nullptr, (argument_list_tuple*)nullptr);
+        }
+    };
+
     class mono
     {
         std::string m_mono_root_dir;
@@ -92,12 +192,7 @@ namespace monobind
             }
         }
 
-        MonoDomain* get_domain()
-        {
-            return m_domain;
-        }
-
-        const MonoDomain* get_domain() const
+        MonoDomain* get_domain() const
         {
             return m_domain;
         }
@@ -107,18 +202,12 @@ namespace monobind
             return m_mono_root_dir;
         }
 
-        template<typename R, typename... Args>
-        void add_internal_call(const char* signature, R(*func)(Args...))
-        {
-            mono_add_internal_call(signature, static_cast<const void*>(func));
-        }
-
         template<typename CStyleFuncType, typename F>
         void add_internal_call(const char* signature, F&& f)
         {
             static_assert(std::is_convertible<F, CStyleFuncType>::value, "functor must be convertable to c-style pointer");
-            CStyleFuncType c_style_func = f;
-            mono_add_internal_call(signature, static_cast<const void*>(c_style_func));
+            auto wrapper = internal_function_wrapper<CStyleFuncType>::get<F>();
+            mono_add_internal_call(signature, static_cast<const void*>(wrapper));
         }
     };
 }

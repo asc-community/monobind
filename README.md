@@ -67,10 +67,10 @@ With mono we can now compile our .cs file into a dynamic library and load it int
     // load assembly
     monobind::assembly assembly(mono.get_domain(), "SimpleFunctionCall.dll");
 ```
-And now we can finally resolve method by passing it cpp implementation as function pointer to mono. Invoking method is not that hard too - simply get the method by its signature and call it (you can also pass primitive types, aligned structures, C/C++ strings and arrays between C++ and C# with zero additional code!):
+And now we can finally resolve method by passing its cpp implementation as callable object to mono. Invoking method is not that hard too - simply get the method by its signature and call it (you can also pass primitive types, aligned structures, C/C++ strings and arrays between C++ and C# with zero additional code!):
 ```cpp
 // resolve external method in C# code
-mono.add_internal_call("MonoBindExamples.SimpleFunctionCall::HelloFromCpp()", hello_from_cpp);
+mono.add_internal_call<void(*)()>("MonoBindExamples.SimpleFunctionCall::HelloFromCpp()", MONOBIND_CALLABLE(hello_from_cpp));
 
 // call C# method
 monobind::method method = assembly.get_method("MonoBindExamples.SimpleFunctionCall::HelloFromCSharp()");

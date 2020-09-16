@@ -29,7 +29,7 @@ namespace monobind
             return mono_get_uint32_class();
         }
 
-        static  MonoClass* get_type(int32_t* t)
+        static MonoClass* get_type(int32_t* t)
         {
             return mono_get_int32_class();
         }

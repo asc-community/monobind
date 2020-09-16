@@ -22,8 +22,31 @@
 
 #pragma once
 
-#include <monobind/converters.h>
-#include <monobind/mono.h>
-#include <monobind/assembly.h>
-#include <monobind/compiler.h>
-#include <monobind/object.h>
+#include <monobind/mono_api_include.h>
+#include <memory>
+
+namespace monobind
+{
+    template<typename T>
+    struct to_mono_converter
+    {
+        static auto convert(MonoDomain* domain, const T& t)
+        {
+            return std::addressof(t);
+        }
+    };
+
+    template<typename T>
+    struct from_mono_converter
+    {
+        static T convert(MonoDomain* domain, T t)
+        {
+            return t;
+        }
+
+        static T convert(MonoDomain* domain, MonoObject* t)
+        {
+            return *(T*)mono_object_unbox(t);
+        }
+    };
+}

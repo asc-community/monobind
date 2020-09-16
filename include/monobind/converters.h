@@ -24,6 +24,8 @@
 
 #include <monobind/exception_handling.h>
 #include <monobind/type_accessor.h>
+#include <monobind/converters_fwd.h>
+#include <monobind/object.h>
 
 #include <string>
 #include <vector>
@@ -53,30 +55,12 @@ namespace monobind
         }
     }
 
-    template<typename T>
-    struct to_mono_converter
-    {
-        static auto convert(MonoDomain* domain, const T& t)
-        {
-            return std::addressof(t);
-        }
-    };
-
-    template<typename T>
-    struct from_mono_converter
-    {
-        static T convert(MonoDomain* domain, MonoObject* t)
-        {
-            return reinterpret_cast<T>(t);
-        }
-    };
-
     template<>
     struct from_mono_converter<void>
     {
         static void convert(MonoDomain* domain, MonoObject* t)
         {
-            return void(t);
+            (void)t;
         }
     };
 
@@ -110,9 +94,8 @@ namespace monobind
     template<typename T>
     struct from_mono_converter<std::vector<T>>
     {
-        static std::vector<T> convert(MonoDomain* domain, MonoObject* obj)
+        static std::vector<T> convert(MonoDomain* domain, MonoArray* arr)
         {
-            MonoArray* arr = reinterpret_cast<MonoArray*>(obj);
             size_t size = mono_array_length(arr);
             std::vector<T> vec(size);
             for (size_t i = 0; i < size; i++)
@@ -121,6 +104,12 @@ namespace monobind
                 vec[i] = from_mono_converter<T>::convert(domain, object);
             }
             return std::move(vec);
+        }
+
+        static std::vector<T> convert(MonoDomain* domain, MonoObject* obj)
+        {
+            MonoArray* arr = reinterpret_cast<MonoArray*>(obj);
+            return convert(domain, arr);
         }
     };
 
@@ -143,9 +132,8 @@ namespace monobind
     template<typename T, size_t N>
     struct from_mono_converter<std::array<T, N>>
     {
-        static std::array<T, N> convert(MonoDomain* domain, MonoObject* obj)
+        static std::array<T, N> convert(MonoDomain* domain, MonoArray* arr)
         {
-            MonoArray* arr = reinterpret_cast<MonoArray*>(obj);
             size_t size = mono_array_length(arr);
             std::array<T, N> vec;
             for (size_t i = 0; i < (N < size ? N : size); i++)
@@ -154,6 +142,12 @@ namespace monobind
                 vec[i] = from_mono_converter<T>::convert(domain, object);
             }
             return vec;
+        }
+
+        static std::array<T, N> convert(MonoDomain* domain, MonoObject* obj)
+        {
+            MonoArray* arr = reinterpret_cast<MonoArray*>(obj);
+            return convert(domain, arr);
         }
     };
 
@@ -176,16 +170,10 @@ namespace monobind
     template<>
     struct from_mono_converter<std::string>
     {
-        static std::string convert(MonoDomain* domain, MonoObject* obj)
+        static std::string convert(MonoDomain* domain, MonoString* str)
         {
             std::string result;
             MonoError err;
-            MonoObject* exc = nullptr;
-            MonoString* str = mono_object_to_string(obj, &exc);
-            if (exc != nullptr)
-            {
-                throw_exception("cannot convert object to string");
-            }
             char* utf8str = mono_string_to_utf8_checked(str, &err);
             if (err.error_code == MONO_ERROR_NONE)
             {
@@ -193,6 +181,17 @@ namespace monobind
                 mono_free(utf8str);
             }
             return result;
+        }
+
+        static std::string convert(MonoDomain* domain, MonoObject* obj)
+        {
+            MonoObject* exc = nullptr;
+            MonoString* str = mono_object_to_string(obj, &exc);
+            if (exc != nullptr)
+            {
+                throw_exception("cannot convert object to string");
+            }
+            return convert(domain, str);
         }
     };
 
@@ -208,6 +207,11 @@ namespace monobind
     template<>
     struct from_mono_converter<std::wstring>
     {
+        static std::wstring convert(MonoDomain* domain, MonoString* str)
+        {
+            return mono_string_chars(str);
+        }
+
         static std::wstring convert(MonoDomain* domain, MonoObject* obj)
         {
             MonoObject* exc = nullptr;
@@ -216,7 +220,25 @@ namespace monobind
             {
                 throw_exception("cannot convert object to string");
             }
-            return mono_string_chars(str);
+            return convert(domain, str);
+        }
+    };
+
+    template<>
+    struct to_mono_converter<object>
+    {
+        static MonoObject* convert(MonoDomain* domain, const object& obj)
+        {
+            return obj.get_pointer();
+        }
+    };
+
+    template<>
+    struct from_mono_converter<object>
+    {
+        static object convert(MonoDomain* domain, MonoObject* obj)
+        {
+            return object(obj);
         }
     };
 
