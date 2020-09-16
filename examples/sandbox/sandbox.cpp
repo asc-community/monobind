@@ -16,6 +16,9 @@ void cat_mew_func(monobind::object cat)
 	cat_struct.c = cat["c"];
 	cat_struct.d = cat["d"];
 	std::cout << "mew from cat: " << "x: " << cat_struct.x << " c: " << cat_struct.c << " d: " << cat_struct.d << std::endl;
+	cat["x"] = 3;
+	cat["c"] = 'Z';
+	cat["d"] = -1.7f;
 }
 
 int main(int argc, char* argv[])
@@ -28,15 +31,15 @@ int main(int argc, char* argv[])
 
 	monobind::assembly assembly(mono.get_domain(), "Dog.dll");
 
-	mono.add_internal_call<void(*)(monobind::object)>("Cat::Mew(CatImpl)", MONOBIND_CALLABLE(cat_mew_func));
+	mono.add_internal_call<void(monobind::object)>("Cat::Mew(CatImpl)", MONOBIND_CALLABLE(cat_mew_func));
 
-	mono.add_internal_call<std::string(*)(std::string)>("Cat::MewMew(string)", [](std::string str)
+	mono.add_internal_call<std::string(std::string)>("Cat::MewMew(string)", [](std::string str)
 	{
 		std::cout << "mew mew: " << str << std::endl;
 		return str;
 	});
 
-	auto mewmew = assembly.get_method("Cat::MewMew(string)").as_function<std::string(*)(std::string)>();
+	auto mewmew = assembly.get_method("Cat::MewMew(string)").as_function<std::string(std::string)>();
 	std::cout << "in C++: " << mewmew("hi!") << std::endl;
 
 	monobind::method method = assembly.get_method("Dog::Type()");

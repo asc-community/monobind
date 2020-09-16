@@ -34,7 +34,7 @@ namespace monobind
             template<typename T>
             void operator=(T&& value)
             {
-                set(to_mono_converter<T>::convert(m_domain, std::forward<T>(value)));
+                set((void*)to_mono_converter<T>::convert(m_domain, std::forward<T>(value)));
             }
 
             template<typename T>

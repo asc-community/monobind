@@ -2,7 +2,7 @@
 monobind is a lightweight header-only library that exposes C++ types in C# and vice versa, mainly to create C# bindings of existing C++ code. It is inspired by the excellent library [Boost.Python](https://www.boost.org/doc/libs/1_74_0/libs/python) and tries to achieve simular goals of minimizing boilerplate code when implementing interoperability between C++ and C#.
 
 ### Dependencies
-monobind requires at least C++11 compatible compiler to run. It only depends on [mono](https://www.mono-project.com/) - cross-platform .NET framework. You do not have to build it - simply install it from the official website to your system.
+monobind requires at least C++14 compatible compiler to run. It only depends on [mono](https://www.mono-project.com/) - cross-platform .NET framework. You do not have to build it - simply install it from the official website to your system.
 
 ### Building
 You can install monobind using Cmake. First of all, you should add the library to your project by executing the following git command: `git submodule add https://github.com/MomoDeve/monobind`. Then simply paste the code below into your `CMakeLists.txt`, replacing names & paths if necessary:
@@ -70,9 +70,9 @@ With mono we can now compile our .cs file into a dynamic library and load it int
 And now we can finally resolve method by passing its cpp implementation as callable object to mono. Invoking method is not that hard too - simply get the method by its signature and call it (you can also pass primitive types, aligned structures, C/C++ strings and arrays between C++ and C# with zero additional code!):
 ```cpp
 // resolve external method in C# code
-mono.add_internal_call<void(*)()>("MonoBindExamples.SimpleFunctionCall::HelloFromCpp()", MONOBIND_CALLABLE(hello_from_cpp));
+mono.add_internal_call<void()>("MonoBindExamples.SimpleFunctionCall::HelloFromCpp()", MONOBIND_CALLABLE(hello_from_cpp));
 
 // call C# method
 monobind::method method = assembly.get_method("MonoBindExamples.SimpleFunctionCall::HelloFromCSharp()");
-method.invoke();
+method.invoke_static();
 ```

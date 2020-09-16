@@ -30,6 +30,7 @@ public class Dog
         cat.c = 'x';
         cat.d = 1.43f;
         Cat.Mew(cat);
+        Console.WriteLine($"cat after call: x: {cat.x}, c: {cat.c}, d: {cat.d}");
     }
 
     public void Bark()

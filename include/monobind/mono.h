@@ -86,7 +86,7 @@ namespace monobind
     struct internal_function_wrapper;
 
     template<typename R, typename... Args>
-    class internal_function_wrapper<R(*)(Args...)>
+    class internal_function_wrapper<R(Args...)>
     {
         template<typename F, typename MonoReturnType, typename... MonoArgs>
         static auto invoke_inner_function(MonoArgs&&... args)
@@ -125,6 +125,7 @@ namespace monobind
         template<typename F>
         static auto get()
         { 
+            static_assert(std::is_convertible<F, R(*)(Args...)>::value, "functor type must be convertible to function pointer");
             return get_impl<F>((return_type*)nullptr, (argument_list_tuple*)nullptr);
         }
     };
@@ -202,11 +203,10 @@ namespace monobind
             return m_mono_root_dir;
         }
 
-        template<typename CStyleFuncType, typename F>
+        template<typename FunctionSignature, typename F>
         void add_internal_call(const char* signature, F&& f)
         {
-            static_assert(std::is_convertible<F, CStyleFuncType>::value, "functor must be convertable to c-style pointer");
-            auto wrapper = internal_function_wrapper<CStyleFuncType>::get<F>();
+            auto wrapper = internal_function_wrapper<FunctionSignature>::get<F>();
             mono_add_internal_call(signature, static_cast<const void*>(wrapper));
         }
     };

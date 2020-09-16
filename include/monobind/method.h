@@ -36,7 +36,7 @@ namespace monobind
     struct internal_get_function_type;
 
     template<typename R, typename... Args >
-    struct internal_get_function_type<R(*)(Args...)>
+    struct internal_get_function_type<R(Args...)>
     {
         using type = std::function<R(Args...)>;
         using result_type = R;
@@ -105,10 +105,10 @@ namespace monobind
             return invoke_instance<T>(static_cast<MonoObject*>(nullptr), std::forward<Args>(args)...);
         }
 
-        template<typename CStyleFunc>
+        template<typename FunctionSignature>
         auto as_function()
         {
-            using FunctorInfo = internal_get_function_type<CStyleFunc>;
+            using FunctorInfo = internal_get_function_type<FunctionSignature>;
             using ResultType = typename FunctorInfo::result_type;
             using Functor = typename FunctorInfo::type;
 
