@@ -74,5 +74,5 @@ mono.add_internal_call<void()>("MonoBindExamples.SimpleFunctionCall::HelloFromCp
 
 // call C# method
 monobind::method method = assembly.get_method("MonoBindExamples.SimpleFunctionCall::HelloFromCSharp()");
-method.invoke_static();
+method.invoke_static<void()>();
 ```

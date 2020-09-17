@@ -27,3 +27,4 @@
 #include <monobind/assembly.h>
 #include <monobind/compiler.h>
 #include <monobind/object.h>
+#include <monobind/ostream_operators.h>

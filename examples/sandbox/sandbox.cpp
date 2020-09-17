@@ -2,23 +2,56 @@
 
 #include <iostream>
 
-struct Cat
+class Cat
 {
+public:
+	static monobind::class_type cat_type;
+
 	int x;
 	char c;
 	float d;
+
+	Cat(){ }
 };
 
-void cat_mew_func(monobind::object cat)
+monobind::class_type Cat::cat_type;
+
+template<>
+struct monobind::from_mono_converter<Cat>
 {
-	Cat cat_struct;
-	cat_struct.x = cat["x"];
-	cat_struct.c = cat["c"];
-	cat_struct.d = cat["d"];
+	static Cat convert(MonoDomain* domain, MonoObject* o)
+	{
+		Cat c;
+		auto obj = monobind::to_object(o);
+		c.c = obj["c"];
+		c.d = obj["d"];
+		c.x = obj["x"];
+		return c;
+	}
+};
+
+template<>
+struct monobind::to_mono_converter<Cat>
+{
+	static MonoObject* convert(MonoDomain* domain, const Cat& c)
+	{
+		monobind::object obj(domain, Cat::cat_type);
+		obj["c"] = c.c;
+		obj["d"] = c.d;
+		obj["x"] = c.x;
+		return obj.get_pointer();
+	}
+};
+
+template<>
+struct monobind::can_be_trivially_converted<Cat>
+{
+	static constexpr size_t value = false;
+};
+
+void cat_mew_func(Cat cat_struct)
+{
 	std::cout << "mew from cat: " << "x: " << cat_struct.x << " c: " << cat_struct.c << " d: " << cat_struct.d << std::endl;
-	cat["x"] = 3;
-	cat["c"] = 'Z';
-	cat["d"] = -1.7f;
 }
 
 int main(int argc, char* argv[])
@@ -31,7 +64,9 @@ int main(int argc, char* argv[])
 
 	monobind::assembly assembly(mono.get_domain(), "Dog.dll");
 
-	mono.add_internal_call<void(monobind::object)>("Cat::Mew(CatImpl)", MONOBIND_CALLABLE(cat_mew_func));
+	Cat::cat_type = monobind::class_type(assembly.get_image(), "", "CatImpl");
+
+	mono.add_internal_call<void(Cat)>("Cat::Mew(CatImpl)", MONOBIND_CALLABLE(cat_mew_func));
 	mono.add_internal_call<std::string(std::string)>("Cat::MewMew(string)", [](std::string str)
 	{
 		std::cout << "mew mew: " << str << std::endl;
@@ -54,7 +89,7 @@ int main(int argc, char* argv[])
 
 	//Run the method
 	std::cout << "Running the method: Dog::Bark(int)" << std::endl;
-	dog.get_method<void(int)>("Bark")(3);
+	dog.get_method<void(int)>("::Bark(int)")(3);
 
 	return 0;
 }

@@ -26,7 +26,7 @@ int main()
     monobind::method method = assembly.get_method("MonoBindExamples.SimpleFunctionCall::HelloFromCSharp()");
 
     // call C# method
-    method.invoke_static<void>();
+    method.invoke_static<void()>();
 
     return 0;
 }

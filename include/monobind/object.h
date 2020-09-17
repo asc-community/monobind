@@ -10,6 +10,18 @@ namespace monobind
 {
     class object
     {
+        mutable std::map<std::string, MonoClassField*, std::less<>> m_field_cache;
+        mutable std::map<std::string, MonoMethod*, std::less<>> m_method_cache;
+
+        MonoObject* m_object = nullptr;
+        MonoDomain* m_domain = nullptr;
+        
+        static void alloc_object(MonoDomain* domain, MonoObject** obj, MonoClass* class_type)
+        {
+            *obj = mono_object_new(domain, class_type);
+        }
+
+    public:
         class field_wrapper
         {
             MonoDomain* m_domain = nullptr;
@@ -58,17 +70,6 @@ namespace monobind
             }
         };
 
-        mutable std::map<std::string, MonoClassField*, std::less<>> m_field_cache;
-        mutable std::map<std::string, MonoMethod*, std::less<>> m_method_cache;
-
-        MonoObject* m_object = nullptr;
-        MonoDomain* m_domain = nullptr;
-        
-        static void alloc_object(MonoDomain* domain, MonoObject** obj, MonoClass* class_type)
-        {
-            *obj = mono_object_new(domain, class_type);
-        }
-    public:
         object(MonoDomain* domain, const class_type& class_t)
             : object(domain, class_t.get_pointer())
         {
@@ -180,5 +181,15 @@ namespace monobind
         {
             return from_mono_converter<T>::convert(m_domain, m_object);
         }
+
+        std::string to_string() const
+        {
+            return as<std::string>();
+        }
     };
+
+    std::string to_string(const object& obj)
+    {
+        return obj.to_string();
+    }
 }

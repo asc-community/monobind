@@ -96,15 +96,6 @@ namespace monobind
         }
     };
 
-    template<>
-    struct to_mono_converter<std::string>
-    {
-        static MonoString* convert(MonoDomain* domain, const std::string& str)
-        {
-            return mono_string_new(domain, str.c_str());
-        }
-    };
-
     template<typename T>
     struct from_mono_converter<std::vector<T>>
     {
@@ -206,6 +197,15 @@ namespace monobind
                 throw_exception("cannot convert object to string");
             }
             return convert(domain, str);
+        }
+    };
+
+    template<>
+    struct to_mono_converter<std::string>
+    {
+        static MonoString* convert(MonoDomain* domain, const std::string& str)
+        {
+            return mono_string_new(domain, str.c_str());
         }
     };
 

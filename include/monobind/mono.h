@@ -22,26 +22,22 @@
 
 #pragma once
 
-#include <monobind/mono_api_include.h>
 #include <monobind/exception_handling.h>
+#include <monobind/converters_fwd.h>
+#include <monobind/domain.h>
 
 #include <string>
 #include <tuple>
 
 namespace monobind
 {
-    inline MonoDomain* get_current_domain()
-    {
-        return mono_domain_get();
-    }
-
     #define MONOBIND_CALLABLE(func_name) [](auto... args) -> decltype(auto) { return func_name(std::forward<decltype(args)>(args)...); }
 
     template<typename T>
     struct internal_convert_type_to_mono
     {
         using result = typename std::conditional<
-            std::is_standard_layout<T>::value,
+            can_be_trivially_converted<T>::value,
             T, decltype(to_mono_converter<T>::convert(std::declval<MonoDomain*>(), std::declval<T>()))
         >::type;
     };

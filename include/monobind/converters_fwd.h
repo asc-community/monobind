@@ -49,4 +49,10 @@ namespace monobind
             return *(T*)mono_object_unbox(t);
         }
     };
+
+    template<typename T>
+    struct can_be_trivially_converted
+    {
+        static constexpr size_t value = std::is_trivial<T>::value;
+    };
 }
