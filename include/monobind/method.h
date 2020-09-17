@@ -31,6 +31,34 @@
 namespace monobind
 {
     class object;
+    class method;
+
+    template<typename T>
+    struct internal_deduce_functor_type
+    {
+        template<typename... Args>
+        static decltype(auto) invoke(const method& this_ref, MonoObject* self, Args&&... args)
+        {
+            return internal_deduce_functor_type<T(Args...)>::invoke(this_ref, self, std::forward<Args>(args)...);
+        }
+    };
+
+    template<typename T, typename... Args>
+    struct internal_deduce_functor_type<T(Args...)>
+    {
+        template<typename... CurrentArgs>
+        static auto invoke(const method& this_ref, MonoObject* self, CurrentArgs&&... args)
+        {
+            std::array<void*, sizeof...(args)> params;
+            internal_init_params(this_ref.get_domain(), params.data(), std::forward<CurrentArgs>(args)...);
+            MonoObject* result = mono_runtime_invoke(this_ref.get_pointer(), self, params.data(), nullptr);
+            if (!std::is_void<T>::value && result == nullptr)
+            {
+                throw_exception("mono method returned null");
+            }
+            return from_mono_converter<T>::convert(this_ref.get_domain(), result);
+        }
+    };
 
     template<typename T>
     struct internal_get_function_type;
@@ -81,16 +109,9 @@ namespace monobind
         }
 
         template<typename T, typename... Args>
-        T invoke_instance(MonoObject* self, Args&&... args) const
+        decltype(auto) invoke_instance(MonoObject* self, Args&&... args) const
         {
-            std::array<void*, sizeof...(args)> params;
-            internal_init_params(m_domain, params.data(), std::forward<Args>(args)...);
-            MonoObject* result = mono_runtime_invoke(m_native_ptr, self, params.data(), nullptr);
-            if (!std::is_void<T>::value && result == nullptr)
-            {
-                throw_exception("mono method returned null");
-            }
-            return from_mono_converter<T>::convert(m_domain, result);
+            return internal_deduce_functor_type<T>::invoke(*this, self, std::forward<Args>(args)...);
         }
 
         template<typename T, typename... Args>

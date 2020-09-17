@@ -276,4 +276,9 @@ namespace monobind
         result = utf16str;
         return result;
     }
+
+    inline object to_object(MonoObject* obj)
+    {
+        return object(obj);
+    }
 }

@@ -47,6 +47,7 @@ namespace monobind
                 throw_exception("invalid method signature");
             }
             MonoMethod* method_ptr = mono_method_desc_search_in_image(desc, m_assembly_image);
+            mono_method_desc_free(desc);
             if (method_ptr != nullptr)
             {
                 m_method_cache.emplace(method_signature, method_ptr);

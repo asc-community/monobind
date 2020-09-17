@@ -32,7 +32,6 @@ int main(int argc, char* argv[])
 	monobind::assembly assembly(mono.get_domain(), "Dog.dll");
 
 	mono.add_internal_call<void(monobind::object)>("Cat::Mew(CatImpl)", MONOBIND_CALLABLE(cat_mew_func));
-
 	mono.add_internal_call<std::string(std::string)>("Cat::MewMew(string)", [](std::string str)
 	{
 		std::cout << "mew mew: " << str << std::endl;
@@ -46,25 +45,16 @@ int main(int argc, char* argv[])
 
 	//run the method
 	std::cout << "Running the static method: Dog::Type()" << std::endl;
-	method.invoke_static<void>();
+	method.invoke_static<void()>();
 
-	//Get the class
-	MonoClass* dogclass;
-	dogclass = mono_class_from_name(assembly.get_image(), "", "Dog");
-	if (!dogclass)
-	{
-		std::cout << "mono_class_from_name failed" << std::endl;
-		return 1;
-	}
+	monobind::class_type dogclass(assembly.get_image(), "", "Dog");
 
 	//Create a instance of the class
-	monobind::object dogA(mono.get_domain(), dogclass);
-
-	auto object_method = assembly.get_method("Dog::Bark(int)");
+	monobind::object dog(mono.get_domain(), dogclass);
 
 	//Run the method
 	std::cout << "Running the method: Dog::Bark(int)" << std::endl;
-	object_method.invoke_instance<void>(dogA, 3);
+	dog.get_method<void(int)>("Bark")(3);
 
 	return 0;
 }
