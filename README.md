@@ -124,3 +124,60 @@ my_obj["someField"] = 3;
 // or explicitly cast field to type:
 auto x = my_obj["someField"].as<int>();
 ```
+
+### Type conversions
+Have you noticed that there is no need to convert types when passing them to mono methods? Because you literally do not have to! All primitive types, structures and arrays and strings are passed by value with automatic conversion between C++ and C# code. It works for method arguments, method return value, fields and callable input arguments in internal call. Here is a list of all built-in conversions in monobind:
+|C++ type      |C# type|C++ type|C# type|C++ type                     |C# type               |
+|--------------|-------|--------|-------|-----------------------------|----------------------|
+|char / uint8_t|byte   |int64_t |long   |std::string / const char*    |string                |
+|int16_t       |int16  |uint64_t|ulong  |std::wstring / const wchar_t*|string                |
+|uint16_t      |uint16 |float   |single |monobind::object             |class_object          |
+|int / int32_t |int    |double  |double |std::vector / std::array     |any_type[]            |
+|uint32_t      |uint   |wchar_t |char   |c-style structure            |struct with std-layout|
+
+If you have types which are not trivially converted between mono and native code, you can also defined your own converters:
+```cs
+// conversion from C++ to C#
+template<>
+struct monobind::to_mono_converter<your_type>
+{
+    static MonoObject* convert(MonoDomain* domain, your_type t)
+    {
+        monobind::object obj;
+        // custom code which initializes obj and its fields
+        return obj.get_pointer():
+    }
+};
+```
+```cs
+// conversion from C# to C++
+template<>
+struct monobind::from_mono_converter<your_type>
+{
+    static your_type convert(MonoDomain* domain, MonoObject* obj)
+    {
+        your_type t;
+        // custom code which intializes t and its fields
+        return t;
+    }
+};
+```
+If you need to override behaviour of some primitive type conversions (int, char or your plain struct), you also need to define the following structure. This will help monobind to determine that the type cannot be just reinterpret as memory chunk when passing between runtime and native code:
+```cs
+template<>
+struct monobind::can_be_trivially_converted<your_type>
+{
+    static constexpr size_t value = false;
+};
+```
+With all this utilities, its nuch easier to call methods and work with their return values. For example, here is the implementation of split function call from C++. notice how arrays and string are naturally passed to C# methods:
+```cs
+auto split_method = assembly.get_method("string::Split(char[])");
+auto split_fun = split_method.as_function<std::vector<std::string>(std::string, std::array<wchar_t, 1>)>();
+
+auto words = split_fun("split this line", { L' ' });
+for(const std::string& word : words)
+{
+    std::cout << word << std::endl;
+}
+```
