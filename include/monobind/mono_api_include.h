@@ -25,3 +25,4 @@
 #include <mono/metadata/assembly.h>
 #include <mono/jit/jit.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/mono-gc.h>

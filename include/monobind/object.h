@@ -3,16 +3,12 @@
 #include <monobind/method.h>
 #include <monobind/class_type.h>
 
-#include <map>
 #include <string>
 
 namespace monobind
 {
     class object
     {
-        mutable std::map<std::string, MonoClassField*, std::less<>> m_field_cache;
-        mutable std::map<std::string, MonoMethod*, std::less<>> m_method_cache;
-
         MonoObject* m_object = nullptr;
         MonoDomain* m_domain = nullptr;
         
@@ -120,23 +116,19 @@ namespace monobind
             return m_object;
         }
 
+        size_t get_gc_generation() const
+        {
+            return (size_t)mono_gc_get_generation(m_object);
+        }
+
         MonoClassField* get_field(const char* field_name) const
         {
-            auto it = m_field_cache.find(field_name);
-            if (it != m_field_cache.end())
+            MonoClassField* field = get_class().get_field(field_name);
+            if (field == nullptr)
             {
-                return it->second;
+                throw_exception("could not find field in object");
             }
-            else
-            {
-                MonoClassField* field = get_class().get_field(field_name);
-                if (field == nullptr)
-                {
-                    throw_exception("could not find field in object");
-                }
-                m_field_cache[field_name] = field;
-                return field;
-            }
+            return field;
         }
 
         field_wrapper operator[](const char* field_name) const
@@ -147,21 +139,12 @@ namespace monobind
 
         MonoMethod* get_method_pointer(const char* name) const
         {
-            auto it = m_method_cache.find(name);
-            if (it != m_method_cache.end())
+            MonoMethod* method_type = get_class().get_method_pointer(name);
+            if (method_type == nullptr)
             {
-                return it->second;
+                throw_exception("could not find method in class");
             }
-            else
-            {
-                MonoMethod* method_type = get_class().get_method(name);
-                if (method_type == nullptr)
-                {
-                    throw_exception("could not find method in class");
-                }
-                m_method_cache[name] = method_type;
-                return method_type;
-            }
+            return method_type;
         }
 
         template<typename FunctionSignature>

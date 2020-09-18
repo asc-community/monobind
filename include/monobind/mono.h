@@ -89,8 +89,8 @@ namespace monobind
             -> typename std::enable_if<!std::is_void<MonoReturnType>::value, MonoReturnType>::type
         {
             MonoDomain* domain = get_current_domain();
-            void* dummy = nullptr;
-            auto result = reinterpret_cast<F*>(dummy)->operator()(from_mono_converter<Args>::convert(domain, args)...);
+            std::aligned_storage<sizeof(F)> dummy;
+            auto result = reinterpret_cast<F*>(&dummy)->operator()(from_mono_converter<Args>::convert(domain, args)...);
             return to_mono_converter<R>::convert(domain, std::move(result));
         }
 
@@ -99,8 +99,8 @@ namespace monobind
             -> typename std::enable_if<std::is_void<MonoReturnType>::value, void>::type
         {
             MonoDomain* domain = get_current_domain();
-            void* dummy = nullptr;
-            reinterpret_cast<F*>(dummy)->operator()(from_mono_converter<Args>::convert(domain, args)...);
+            std::aligned_storage<sizeof(F)> dummy;
+            reinterpret_cast<F*>(&dummy)->operator()(from_mono_converter<Args>::convert(domain, args)...);
         }
 
         using argument_list_tuple = typename internal_convert_tuple_types_to_mono<std::tuple<Args...>>::result;

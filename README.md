@@ -1,10 +1,10 @@
 # monobind
 monobind is a lightweight header-only library that exposes C++ types in C# and vice versa, mainly to create C# bindings of existing C++ code. It is inspired by the excellent library [Boost.Python](https://www.boost.org/doc/libs/1_74_0/libs/python) and tries to achieve simular goals of minimizing boilerplate code when implementing interoperability between C++ and C#.
 
-### Dependencies
+## Dependencies
 monobind requires at least C++14 compatible compiler to run. It only depends on [mono](https://www.mono-project.com/) - cross-platform .NET framework. You do not have to build it - simply install it from the official website to your system.
 
-### Building
+## Building
 You can install monobind using Cmake. First of all, you should add the library to your project by executing the following git command: `git submodule add https://github.com/MomoDeve/monobind`. Then simply paste the code below into your `CMakeLists.txt`, replacing names & paths if necessary:
 ```CMake
 // add monobind as subdirectory
@@ -19,8 +19,12 @@ target_compile_definitions(current_target PUBLIC MONOBIND_MONO_ROOT="${MONO_ROOT
 ```
 `FindMono.cmake` should find mono installation library. If it fails and you have mono properly installed, I will be glad to see your PR with fixing changes
 
-### Usage
-Firstly I should point out that monobind is still in development, so you may find many features missing. I am trying my best to make the library more convinient and waiting for your suggestions (or PRs). Code examples can be found in this repository, but if you do not have so much time, here is a baseline of what you can do using monobind:
+## Examples
+
+Firstly I should point out that monobind is still in development, so you may find many features missing. I am trying my best to make the library more convinient and waiting for your suggestions (or PRs). Also, if you find the following examples not enough to understand how to use the library, consider looking through some code samples in /examples folder.
+
+### Baseline
+Here is the minimal code you have to write to call C# method from C++ and vice versa. Not arguments are passed between, so it requires the least amount of effort.
 
 *Consider having .cs and .cpp files with the following methods:*
 ```cs

@@ -82,20 +82,6 @@ namespace monobind
         }
     };
 
-    template<>
-    struct to_mono_converter<char>
-    {
-        static wchar_t* convert(MonoDomain* domain, char c)
-        {
-            // we somehow need to get persistent memory for function call
-            // there is no other way for primitives rather than 
-            // returning pointer to static variable
-            thread_local wchar_t w;
-            w = c;
-            return std::addressof(w);
-        }
-    };
-
     template<typename T>
     struct from_mono_converter<std::vector<T>>
     {

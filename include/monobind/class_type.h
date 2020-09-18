@@ -1,16 +1,11 @@
 #include <monobind/domain.h>
+#include <monobind/method_view.h>
+#include <monobind/field_view.h>
 
 namespace monobind
 {
     class class_type
     {
-        MonoClass* m_class = nullptr;
-
-        static void invoke_static_constructor(MonoClass* cl)
-        {
-            MonoMethod* m = mono_class_get_method_from_name(cl, ".cctor", 0);
-            mono_runtime_invoke(m, nullptr, nullptr, nullptr);
-        }
     public:
         class static_field_wrapper
         {
@@ -46,6 +41,7 @@ namespace monobind
                 }
                 return result;
             }
+
         public:
             static_field_wrapper(MonoDomain* domain, MonoClass* parent, MonoClassField* field)
                 : m_domain(domain), m_parent(parent), m_field(field)
@@ -79,6 +75,17 @@ namespace monobind
             }
         };
 
+    private:
+        MonoClass* m_class = nullptr;
+
+        static void invoke_static_constructor(MonoClass* cl)
+        {
+            MonoMethod* m = mono_class_get_method_from_name(cl, ".cctor", 0);
+            mono_runtime_invoke(m, nullptr, nullptr, nullptr);
+        }
+
+    public:
+
         class_type() = default;
 
         class_type(MonoImage* image, const char* namespace_name, const char* class_name)
@@ -108,7 +115,7 @@ namespace monobind
             return mono_class_get_field_from_name(m_class, field_name);
         }
 
-        MonoMethod* get_method(const char* name) const
+        MonoMethod* get_method_pointer(const char* name) const
         {
             auto desc = mono_method_desc_new(name, false);
             if (desc == nullptr)
@@ -124,10 +131,57 @@ namespace monobind
             return m;
         }
 
+        template<typename FunctionSignature>
+        auto get_method(const char* method_name)
+        {
+            using FunctorTraits = internal_get_function_type<FunctionSignature>;
+            auto method_type = get_method_pointer(method_name);
+            auto functor = [f = method(m_domain, method_type), o = m_object](auto&&... args) mutable->FunctorTraits::result_type
+            {
+                return f.invoke_static<FunctionSignature>(o, std::forward<decltype(args)>(args)...);
+            };
+            return FunctorTraits::type(std::move(functor));
+        }
+
         static_field_wrapper operator[](const char* field_name) const
         {
             auto field = get_field(field_name);
             return static_field_wrapper(get_current_domain(), m_class, field);
         }
+
+        method_view get_methods() const
+        {
+            return method_view(get_current_domain(), m_class);
+        }
+
+        field_view get_fields() const
+        {
+            return field_view(m_class);
+        }
+
+        const char* get_namespace() const
+        {
+            return mono_class_get_namespace(m_class);
+        }
+
+        class_type get_nesting_type() const
+        {
+            return class_type(mono_class_get_nesting_type(m_class));
+        }
+
+        const char* get_name() const
+        {
+            return mono_class_get_name(m_class);
+        }
+
+        std::string to_string() const
+        {
+            return get_name();
+        }
     };
+
+    std::string to_string(const class_type& cl)
+    {
+        return cl.to_string();
+    }
 }

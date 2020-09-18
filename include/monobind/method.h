@@ -27,6 +27,7 @@
 
 #include <functional>
 #include <array>
+#include <string>
 
 namespace monobind
 {
@@ -95,7 +96,7 @@ namespace monobind
         method(MonoDomain* domain, MonoMethod* native_ptr)
             : m_domain(domain), m_native_ptr(native_ptr)
         {
-            MONOBIND_ASSERT(m_native_ptr != nullptr);
+            
         }
 
         MonoMethod* get_pointer() const
@@ -127,7 +128,7 @@ namespace monobind
         }
 
         template<typename FunctionSignature>
-        auto as_function()
+        auto as_function() const
         {
             using FunctorInfo = internal_get_function_type<FunctionSignature>;
             using ResultType = typename FunctorInfo::result_type;
@@ -138,5 +139,25 @@ namespace monobind
                 return method.invoke_static<ResultType>(std::forward<decltype(args)>(args)...);
             });
         }
+
+        const char* get_signature() const
+        {
+            return mono_method_get_reflection_name(m_native_ptr);
+        }
+
+        const char* get_name() const
+        {
+            return mono_method_get_name(m_native_ptr);
+        }
+
+        std::string to_string() const
+        {
+            return get_signature();
+        }
     };
+
+    std::string to_string(const method& m)
+    {
+        return m.to_string();
+    }
 }
