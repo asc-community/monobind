@@ -47,7 +47,7 @@ namespace MonoBindExamples
     }
 }
 ```
-```cpp
+```cs
 #include <iostream>
 
 void hello_from_cpp()
@@ -56,14 +56,14 @@ void hello_from_cpp()
 }
 ```
 In C# code we create a class with two static methods. One of them is defined in .cs file and calls the other, which is marked with `extern` and should point to our cpp function. To achieve this, we will embed mono runtime into our C++ executable, create a dynamic library from our .cs file and link them together. To begin with, let's initialize mono:
-```cpp
+```cs
 // if you defined this macro in CMake, it should be equal to the path to the mono root directory
 const char* path_to_mono = MONOBIND_MONO_ROOT;
 monobind::mono mono(path_to_mono);
 mono.init_jit("HelloWorldApplication");
 ```
 With mono we can now compile our .cs file into a dynamic library and load it into the executable. We can use `monobind::compiler` which accepts path to mono root or mcs compiler. After that assembly can be loaded by passing mono domain and the library name:
-```cpp
+```cs
     // build csharp library
     monobind::compiler compiler(mono.get_root_dir());
     compiler.build_library("SimpleFunctionCall.dll", "SimpleFunctionCall.cs");
@@ -72,11 +72,55 @@ With mono we can now compile our .cs file into a dynamic library and load it int
     monobind::assembly assembly(mono.get_domain(), "SimpleFunctionCall.dll");
 ```
 And now we can finally resolve method by passing its cpp implementation as callable object to mono. Invoking method is not that hard too - simply get the method by its signature and call it (you can also pass primitive types, aligned structures, C/C++ strings and arrays between C++ and C# with zero additional code!):
-```cpp
+```cs
 // resolve external method in C# code
 mono.add_internal_call<void()>("MonoBindExamples.SimpleFunctionCall::HelloFromCpp()", MONOBIND_CALLABLE(hello_from_cpp));
 
 // call C# method
 monobind::method method = assembly.get_method("MonoBindExamples.SimpleFunctionCall::HelloFromCSharp()");
 method.invoke_static<void()>();
+```
+
+### Assemblies, classes, objects
+To interact with C# classes in most cases you need assemblies. In monobind they are represented by `monobind::assembly` and can be loaded from dynamic library files. If one library depends on another, it will automatically try to load it. Usually you will write something like this:
+```cs
+// get domain from initialized mono runtime object
+monobind::assembly my_lib(mono.get_domain(), "my_lib.dll");
+// or the following, if you do not have reference to mono object:
+monobind::assembly my_lib(monobind::get_current_domain(), "my_lib.dll");
+```
+From assembly you can get classes and methods. Classes are represented by `monobind::class_type` and methods are represented by `monobind::method`. To retrieve them, you have to know their signature (namespace and full name for classes, full signature for methods):
+```cs
+// getting C# class with signature Class.Namespace.ClassName 
+monobind::class_type my_class(assembly.get_image(), "Class.Namespace", "ClassName");
+// getting method handle with signature Class.Namespace.ClassName.YourMethod(int), can be either static or instanced
+monobind::method m = assembly.get_method("Class.Namespace.ClassName::YourMethod(int,single)");
+```
+And with them it is possible to create objects. They are represented by `monobind::object` class and can be easily passed around or accessed:
+```cs
+// if object has no constructor, simply pass domain and its class
+monobind::object my_obj(mono.get_domain(), my_class);
+// or specify constructor to call (two arguments (int and float) in this case):
+monobind::object my_obj(mono.get_domain(), my_class, "::.ctor(int,single)", 3, 2.5f);
+```
+You can access fields, call methods or pass them as method arguments:
+```cs
+// call static method with object of some type as first argument and int as second argument:
+my_method.invoke_static<void(monobind::object, int>(my_obj, 3);
+// call instanced method with object as this pointer and int as argument:
+my_method.invoke_instance<void(int)>(my_obj, 3);
+```
+```cs
+// same as above, but my_obj is passed implicitly
+my_obj.get_method<void(int)>("::SomeMethod(int)")(3);
+// and finally, if you need static method but have only object instance:
+my_obj.get_static_method<void(int)>("::SomeStaticMethod(int)")(3);
+```
+```cs
+// you can also access fields
+monobind::object x = my_obj["someField"];
+my_obj["someField"] = 3;
+
+// or explicitly cast field to type:
+auto x = my_obj["someField"].as<int>();
 ```
