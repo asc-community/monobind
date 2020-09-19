@@ -59,6 +59,7 @@ namespace monobind
             : m_domain(domain)
         {
             MONOBIND_ASSERT(domain != nullptr);
+
             m_assembly = mono_domain_assembly_open(domain, path);
             if (m_assembly == nullptr)
             {

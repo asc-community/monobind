@@ -11,12 +11,12 @@ namespace monobind
     {
         MonoObject* m_object = nullptr;
         MonoDomain* m_domain = nullptr;
+        uint32_t m_gchandle = 0;
         
         static void alloc_object(MonoDomain* domain, MonoObject** obj, MonoClass* class_type)
         {
             *obj = mono_object_new(domain, class_type);
         }
-
     public:
         class field_wrapper
         {
@@ -81,6 +81,7 @@ namespace monobind
         object(MonoDomain* domain, MonoClass* class_t)
             : m_domain(domain)
         {
+            MONOBIND_ASSERT(m_domain != nullptr);
             alloc_object(m_domain, &m_object, class_t);
             mono_runtime_object_init(m_object);
         }
@@ -107,6 +108,7 @@ namespace monobind
 
         class_type get_class() const
         {
+            MONOBIND_ASSERT(m_object != nullptr);
             MonoClass* cl = mono_object_get_class(m_object);
             return class_type(cl);
         }
@@ -121,30 +123,86 @@ namespace monobind
             return (size_t)mono_gc_get_generation(m_object);
         }
 
-        MonoClassField* get_field(const char* field_name) const
+        void lock()
         {
-            MonoClassField* field = get_class().get_field(field_name);
-            if (field == nullptr)
-            {
-                throw_exception("could not find field in object");
-            }
-            return field;
+            MONOBIND_ASSERT(m_gchandle == 0);
+            m_gchandle = mono_gchandle_new(m_object, true);
         }
 
-        field_wrapper operator[](const char* field_name) const
+        void unlock()
         {
-            auto field = get_field(field_name);
-            return field_wrapper(m_domain, m_object, field);
+            MONOBIND_ASSERT(m_gchandle != 0);
+            mono_gchandle_free(m_gchandle);
+            m_gchandle = 0;
+        }
+
+        MonoClassField* get_field_pointer(const char* field_name) const
+        {
+            return get_class().get_field_pointer(field_name);
+        }
+
+        MonoProperty* get_property_pointer(const char* property_name) const
+        {
+            return get_class().get_property_pointer(property_name);
         }
 
         MonoMethod* get_method_pointer(const char* name) const
         {
-            MonoMethod* method_type = get_class().get_method_pointer(name);
-            if (method_type == nullptr)
+            return get_class().get_method_pointer(name);
+        }
+
+        bool has_field(const char* field_name) const
+        {
+            return get_class().has_field(field_name);
+        }
+
+        bool has_property(const char* property_name) const
+        {
+            return get_class().has_property(property_name);
+        }
+
+        bool has_method(const char* name) const
+        {
+            return get_class().has_method(name);
+        }
+
+        field_wrapper operator[](const char* field_name) const
+        {
+            MonoClassField* field = get_field_pointer(field_name);
+            return field_wrapper(m_domain, m_object, field);
+        }
+
+        template<typename T>
+        void set_property(const char* name, const T& value) const
+        {
+            MonoProperty* prop = get_property_pointer(name);
+            MonoObject* exc = nullptr;
+            std::array<void*, 1> params { (void*)to_mono_converter<T>::convert(m_domain, value) };
+
+            mono_property_set_value(prop, m_object, params.data(), &exc);
+            if (exc != nullptr)
             {
-                throw_exception("could not find method in class");
+                throw_exception("exception occured while setting property value");
             }
-            return method_type;
+        }
+
+        object get_property(const char* name) const
+        {
+            MonoProperty* prop = get_property_pointer(name);
+            MonoObject* exc = nullptr;
+
+            MonoObject* result = mono_property_get_value(prop, m_object, nullptr, &exc);
+            if (exc != nullptr)
+            {
+                throw_exception("excpetion occured while getting property value");
+            }
+            return object(result);
+        }
+
+        template<typename T>
+        T get_property(const char* name) const
+        {
+            return get_property(name).as<T>();
         }
 
         template<typename FunctionSignature>
@@ -174,6 +232,7 @@ namespace monobind
         template<typename T>
         T as() const
         {
+            MONOBIND_ASSERT(m_object != nullptr);
             return from_mono_converter<T>::convert(m_domain, m_object);
         }
 

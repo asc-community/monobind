@@ -96,7 +96,7 @@ namespace monobind
         method(MonoDomain* domain, MonoMethod* native_ptr)
             : m_domain(domain), m_native_ptr(native_ptr)
         {
-            
+            MONOBIND_ASSERT(m_domain != nullptr);
         }
 
         MonoMethod* get_pointer() const
@@ -142,11 +142,13 @@ namespace monobind
 
         const char* get_signature() const
         {
+            MONOBIND_ASSERT(m_native_ptr != nullptr);
             return mono_method_get_reflection_name(m_native_ptr);
         }
 
         const char* get_name() const
         {
+            MONOBIND_ASSERT(m_native_ptr != nullptr);
             return mono_method_get_name(m_native_ptr);
         }
 

@@ -1,6 +1,7 @@
 #include <monobind/domain.h>
 #include <monobind/method_view.h>
 #include <monobind/field_view.h>
+#include <monobind/property_view.h>
 
 namespace monobind
 {
@@ -20,9 +21,9 @@ namespace monobind
                 class_type field_type(mono_field_get_type(m_field));
                 if (mono_class_is_valuetype(field_type.get_pointer()))
                 {
-                    std::aligned_storage<1024> data;
+                    std::aligned_storage_t<512> data;
                     mono_field_static_get_value(m_vtable, m_field, (void*)&data);
-                    result = mono_value_box(m_domain, m_parent, (void*)&data);
+                    result = mono_value_box(m_domain, field_type.get_pointer(), (void*)&data);
                 }
                 else
                 {
@@ -47,6 +48,12 @@ namespace monobind
                 : m_domain(domain), m_parent(parent), m_field(field)
             {
                 m_vtable = mono_class_vtable(m_domain, m_parent);
+            }
+
+            template<typename T = object>
+            T get()
+            {
+                return as<T>();
             }
 
             template<typename T>
@@ -91,6 +98,10 @@ namespace monobind
         class_type(MonoImage* image, const char* namespace_name, const char* class_name)
         {
             m_class = mono_class_from_name(image, namespace_name, class_name);
+            if (m_class == nullptr)
+            {
+                throw_exception("could not find class in image");
+            }
         }
 
         class_type(MonoClass* cl)
@@ -100,7 +111,7 @@ namespace monobind
         }
 
         class_type(MonoType* type)
-            : m_class(mono_type_get_class(type))
+            : m_class(mono_class_from_mono_type(type))
         {
             
         }
@@ -110,13 +121,45 @@ namespace monobind
             return m_class;
         }
 
-        MonoClassField* get_field(const char* field_name) const
+        MonoClassField* get_field_pointer(const char* field_name) const
         {
-            return mono_class_get_field_from_name(m_class, field_name);
+            MONOBIND_ASSERT(m_class != nullptr);
+            MonoClassField* field = mono_class_get_field_from_name(m_class, field_name);
+            if (field == nullptr)
+            {
+                throw_exception("could not find field in class");
+            }
+            return field;
+        }
+
+        bool has_field(const char* field_name) const
+        {
+            MONOBIND_ASSERT(m_class != nullptr);
+            MonoClassField* field = mono_class_get_field_from_name(m_class, field_name);
+            return field != nullptr;
+        }
+
+        MonoProperty* get_property_pointer(const char* property_name) const
+        {
+            MONOBIND_ASSERT(m_class != nullptr);
+            MonoProperty* prop = mono_class_get_property_from_name(m_class, property_name);
+            if (prop == nullptr)
+            {
+                throw_exception("could not find property in class");
+            }
+            return prop;
+        }
+
+        bool has_property(const char* property_name) const
+        {
+            MONOBIND_ASSERT(m_class != nullptr);
+            MonoProperty* prop = mono_class_get_property_from_name(m_class, property_name);
+            return prop != nullptr;
         }
 
         MonoMethod* get_method_pointer(const char* name) const
         {
+            MONOBIND_ASSERT(m_class != nullptr);
             auto desc = mono_method_desc_new(name, false);
             if (desc == nullptr)
             {
@@ -129,6 +172,46 @@ namespace monobind
                 throw_exception("could not find method in class");
             }
             return m;
+        }
+
+        bool has_method(const char* name) const
+        {
+            MONOBIND_ASSERT(m_class != nullptr);
+            auto desc = mono_method_desc_new(name, false);
+            if (desc == nullptr)
+            {
+                throw_exception("invalid method signature");
+            }
+            MonoMethod* m = mono_method_desc_search_in_class(desc, m_class);
+            return m != nullptr;
+        }
+
+        template<typename T>
+        void set_property(const char* name, const T& value) const
+        {
+            MonoProperty* prop = get_property_pointer(name);
+            MonoObject* exc = nullptr;
+            std::array<void*, 1> params{ (void*)to_mono_converter<T>::convert(get_current_domain(), value) };
+
+            mono_property_set_value(prop, nullptr, params.data(), &exc);
+            if (exc != nullptr)
+            {
+                throw_exception("exception occured while setting property value");
+            }
+        }
+
+        template<typename T = object>
+        T get_property(const char* name) const
+        {
+            MonoProperty* prop = get_property_pointer(name);
+            MonoObject* exc = nullptr;
+
+            MonoObject* result = mono_property_get_value(prop, nullptr, nullptr, &exc);
+            if (exc != nullptr)
+            {
+                throw_exception("excpetion occured while getting property value");
+            }
+            return object(result).as<T>();
         }
 
         template<typename FunctionSignature>
@@ -145,32 +228,43 @@ namespace monobind
 
         static_field_wrapper operator[](const char* field_name) const
         {
-            auto field = get_field(field_name);
+            auto field = get_field_pointer(field_name);
             return static_field_wrapper(get_current_domain(), m_class, field);
         }
 
         method_view get_methods() const
         {
+            MONOBIND_ASSERT(m_class != nullptr);
             return method_view(get_current_domain(), m_class);
         }
 
         field_view get_fields() const
         {
+            MONOBIND_ASSERT(m_class != nullptr);
             return field_view(m_class);
+        }
+
+        property_view get_properties() const
+        {
+            MONOBIND_ASSERT(m_class != nullptr);
+            return property_view(m_class);
         }
 
         const char* get_namespace() const
         {
+            MONOBIND_ASSERT(m_class != nullptr);
             return mono_class_get_namespace(m_class);
         }
 
         class_type get_nesting_type() const
         {
+            MONOBIND_ASSERT(m_class != nullptr);
             return class_type(mono_class_get_nesting_type(m_class));
         }
 
         const char* get_name() const
         {
+            MONOBIND_ASSERT(m_class != nullptr);
             return mono_class_get_name(m_class);
         }
 

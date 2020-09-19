@@ -24,7 +24,7 @@ int main()
     std::cout << std::endl;
 
     auto printer = assembly.get_method("MonoBindExamples.MethodParameters::PrintPrimitives(char,int16,int,long,single,double)");
-    printer.invoke_static<void>('X', 256, 123456789, 9999999999999, 2.3f, 0.33333333333333);
+    printer.invoke_static<void>(L'X', 256, 123456789, 9999999999999, 2.3f, 0.33333333333333);
 
     std::cout << std::endl;
 
