@@ -33,20 +33,19 @@
 
 namespace monobind
 {
-    template<typename T>
-    auto internal_copy_to_mono_array(MonoDomain* domain, const std::vector<T>& vec, MonoArray* arr)
-        -> typename std::enable_if<std::is_standard_layout<T>::value>::type
+    template<typename T, typename Container>
+    auto internal_copy_to_mono_array(MonoDomain* domain, const Container& vec, MonoArray* arr)
+        -> typename std::enable_if<can_be_trivially_converted<T>::value>::type
     {
         for (size_t i = 0; i < vec.size(); i++)
         {
-            auto converted = to_mono_converter<T>::convert(domain, vec[i]);
-            mono_array_set(arr, T, i, converted);
+            mono_array_set(arr, T, i, vec[i]);
         }
     }
 
-    template<typename T>
-    static auto internal_copy_to_mono_array(MonoDomain* domain, const std::vector<T>& vec, MonoArray* arr)
-        -> typename std::enable_if<!std::is_standard_layout<T>::value>::type
+    template<typename T, typename Container>
+    static auto internal_copy_to_mono_array(MonoDomain* domain, const Container& vec, MonoArray* arr)
+        -> typename std::enable_if<!can_be_trivially_converted<T>::value>::type
     {
         for (size_t i = 0; i < vec.size(); i++)
         {
@@ -115,7 +114,7 @@ namespace monobind
             MonoClass* class_type = type_accessor::get_type(converted);
             MonoArray* arr = mono_array_new(domain, class_type, vec.size());
 
-            internal_copy_to_mono_array(domain, vec, arr);
+            internal_copy_to_mono_array<T>(domain, vec, arr);
             return arr;
         }
     };
@@ -153,7 +152,7 @@ namespace monobind
             MonoClass* class_type = type_accessor::get_type(converted);
             MonoArray* arr = mono_array_new(domain, class_type, vec.size());
 
-            internal_copy_to_mono_array(domain, vec, arr);
+            internal_copy_to_mono_array<T>(domain, vec, arr);
             return arr;
         }
     };

@@ -161,7 +161,7 @@ Have you noticed that there is no need to convert types when passing them to mon
 |--------------|-------|--------|-------|-----------------------------|----------------------|
 |char / uint8_t|byte   |int64_t |long   |std::string / const char*    |string                |
 |int16_t       |int16  |uint64_t|ulong  |std::wstring / const wchar_t*|string                |
-|uint16_t      |uint16 |float   |single |monobind::object             |class_object          |
+|uint16_t      |uint16 |float   |single |monobind::object             |class_object/any_type |
 |int / int32_t |int    |double  |double |std::vector / std::array     |any_type[]            |
 |uint32_t      |uint   |wchar_t |char   |c-style structure            |struct with std-layout|
 
@@ -202,8 +202,8 @@ struct monobind::can_be_trivially_converted<your_type>
 ```
 With all this utilities, its much easier to call methods and work with their return values. For example, here is the implementation of split function call from C++. Notice how naturally arrays and string are passed to C# methods:
 ```cs
-auto split_method = assembly.get_method("string::Split(char[])");
-auto split_fun = split_method.as_function<std::vector<std::string>(std::string, std::array<wchar_t, 1>)>();
+auto split_method = assembly.get_method("Utils::SplitString(char[])");
+auto split_fun = split_method.as_function<std::vector<std::string>(const std::string&, std::array<wchar_t, 1>)>();
 
 auto words = split_fun("split this line", { L' ' });
 for(const std::string& word : words)

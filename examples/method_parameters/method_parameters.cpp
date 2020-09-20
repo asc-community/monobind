@@ -28,13 +28,13 @@ int main()
 
     std::cout << std::endl;
 
-    auto split_method = assembly.get_method("MonoBindExamples.MethodParameters::SplitString(string)");
-    auto split_string = split_method.as_function<std::vector<std::string>(std::string)>();
+    auto split_method = assembly.get_method("MonoBindExamples.MethodParameters::SplitString(string,char[])");
+    auto split_string = split_method.as_function<std::vector<std::string>(const std::string&, std::array<wchar_t, 1>)>();
 
     auto concat_method = assembly.get_method("MonoBindExamples.MethodParameters::ConcatString(string[])");
     auto concat_string = concat_method.as_function<std::string(std::vector<std::string>)>();
 
-    auto splitted = split_string("hello world from c++!");   
+    auto splitted = split_string("hello world from c++!", { L' ' });
     auto concated = concat_string(splitted);
     
     std::cout << concated << std::endl;

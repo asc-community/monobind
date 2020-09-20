@@ -26,10 +26,9 @@ namespace MonoBindExamples
             Console.WriteLine($"recieved char: {c}, short: {s}, int: {i}, long: {l}, float: {f}, double: {d}");
         }
 
-        public static string[] SplitString(string s)
+        public static string[] SplitString(string s, char[] sep)
         {
-            Console.WriteLine("splitting: " + s);
-            return s.Split();
+            return s.Split(sep);
         }
 
         public static string ConcatString(string[] s)

@@ -30,7 +30,7 @@ namespace monobind
     template<typename T>
     struct to_mono_converter
     {
-        static auto convert(MonoDomain* domain, const T& t)
+        static const T* convert(MonoDomain* domain, const T& t)
         {
             return std::addressof(t);
         }
@@ -53,6 +53,6 @@ namespace monobind
     template<typename T>
     struct can_be_trivially_converted
     {
-        static constexpr size_t value = std::is_trivial<T>::value;
+        static constexpr size_t value = std::is_standard_layout<T>::value;
     };
 }
