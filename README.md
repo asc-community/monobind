@@ -124,6 +124,32 @@ my_obj["someField"] = 3;
 // or explicitly cast field to type:
 auto x = my_obj["someField"].as<int>();
 ```
+```cs
+// and even properties
+obj.set_property("someProp", 3);
+int prop = obj.get_property("someProp");
+```
+### Getting information about C# types
+There are a couple utility methods with which you can get reflection information about C# types. They are wrapping mono C-style iterators into C++ ones, which is much more comfortable and support for-range loops:
+```cs
+monobind::class_type my_class(assembly.get_image(), "", "MyClass");
+monobind::object my_obj(monobind::get_current_domain(), my_class);
+
+for(const auto& method_obj : my_class.get_methods())
+{
+    std::cout << method_obj.get_signature() << std::endl;
+}
+
+for(const char* field_name : my_obj.get_class().get_fields())
+{
+    std::cout << field_name << " = " << my_obj[field_name] << std::endl;
+}
+
+for(const char* property_name : my_obj.get_class().get_properties())
+{
+    std::cout << property_name << " = " << my_obj.get_property(property_name) << std::endl;
+}
+```
 
 ### Type conversions
 Have you noticed that there is no need to convert types when passing them to mono methods? Because you literally do not have to! All primitive types, structures and arrays and strings are passed by value with automatic conversion between C++ and C# code. It works for method arguments, method return value, fields and callable input arguments in internal call. Here is a list of all built-in conversions in monobind:
@@ -170,7 +196,7 @@ struct monobind::can_be_trivially_converted<your_type>
     static constexpr size_t value = false;
 };
 ```
-With all this utilities, its nuch easier to call methods and work with their return values. For example, here is the implementation of split function call from C++. notice how arrays and string are naturally passed to C# methods:
+With all this utilities, its much easier to call methods and work with their return values. For example, here is the implementation of split function call from C++. Notice how naturally arrays and string are passed to C# methods:
 ```cs
 auto split_method = assembly.get_method("string::Split(char[])");
 auto split_fun = split_method.as_function<std::vector<std::string>(std::string, std::array<wchar_t, 1>)>();
