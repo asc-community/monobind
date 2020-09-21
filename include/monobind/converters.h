@@ -241,6 +241,12 @@ namespace monobind
         }
     };
 
+    template<>
+    struct can_be_trivially_converted<object>
+    {
+        static constexpr size_t value = false;
+    };
+
     inline std::string to_string(MonoString* str)
     {
         std::string result;

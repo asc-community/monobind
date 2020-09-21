@@ -31,14 +31,16 @@
 
 namespace monobind
 {
-    #define MONOBIND_CALLABLE(func_name) [](auto... args) -> decltype(auto) { return func_name(std::forward<decltype(args)>(args)...); }
+    #define MONOBIND_CALLABLE(func_name) [](auto... args) -> decltype(auto) { return func_name(std::move(args)...); }
 
     template<typename T>
     struct internal_convert_type_to_mono
     {
+        using decay_t = typename std::decay<T>::type;
+
         using result = typename std::conditional<
-            can_be_trivially_converted<T>::value,
-            T, decltype(to_mono_converter<T>::convert(std::declval<MonoDomain*>(), std::declval<T>()))
+            can_be_trivially_converted<decay_t>::value,
+            const decay_t*, decltype(to_mono_converter<T>::convert(std::declval<MonoDomain*>(), std::declval<decay_t>()))
         >::type;
     };
 

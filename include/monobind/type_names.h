@@ -33,6 +33,7 @@
 #define MONOBIND_FLOAT_TYPE  "single"
 #define MONOBIND_DOUBLE_TYPE "double"
 #define MONOBIND_BOOL_TYPE   "bool"
+#define MONOBIND_STRING_TYPE "string"
 
 #define MONOBIND_INT8_TYPE   MONOBIND_CHAR_TYPE
 #define MONOBIND_UINT8_TYPE  MONOBIND_CHAR_TYPE
@@ -43,6 +44,9 @@
 #define MONOBIND_UINT32_TYPE MONOBIND_INT_TYPE
 #define MONOBIND_INT64_TYPE  MONOBIND_LONG_TYPE
 #define MONOBIND_UINT64_TYPE MONOBIND_ULONG_TYPE
+#define MONOBIND_WSTRING_TYPE MONOBIND_STRING_TYPE
+
+#include <string>
 
 namespace monobind
 {
@@ -52,66 +56,90 @@ namespace monobind
     template<>
     struct type_name<char>
     {
-        constexpr char* value = MONOBIND_CHAR_TYPE;
+        static constexpr char* value = MONOBIND_CHAR_TYPE;
     };
 
     template<>
     struct type_name<wchar_t>
     {
-        constexpr char* value = MONOBIND_WCHAR_TYPE;
+        static constexpr char* value = MONOBIND_WCHAR_TYPE;
+    };
+
+    template<>
+    struct type_name<int8_t>
+    {
+        static constexpr char* value = MONOBIND_INT8_TYPE;
     };
 
     template<>
     struct type_name<int16_t>
     {
-        constexpr char* value = MONOBIND_SHORT_TYPE;
+        static constexpr char* value = MONOBIND_SHORT_TYPE;
     };
 
     template<>
     struct type_name<int32_t>
     {
-        constexpr char* value = MONOBIND_INT_TYPE;
+        static constexpr char* value = MONOBIND_INT_TYPE;
     };
 
     template<>
     struct type_name<int64_t>
     {
-        constexpr char* value = MONOBIND_LONG_TYPE;
+        static constexpr char* value = MONOBIND_LONG_TYPE;
     };
 
     template<>
     struct type_name<float>
     {
-        constexpr char* value = MONOBIND_FLOAT_TYPE;
+        static constexpr char* value = MONOBIND_FLOAT_TYPE;
     };
 
     template<>
     struct type_name<double>
     {
-        constexpr char* value = MONOBIND_DOUBLE_TYPE;
+        static constexpr char* value = MONOBIND_DOUBLE_TYPE;
     };
 
     template<>
     struct type_name<bool>
     {
-        constexpr char* value = MONOBIND_BOOL_TYPE;
+        static constexpr char* value = MONOBIND_BOOL_TYPE;
+    };
+
+    template<>
+    struct type_name<uint8_t>
+    {
+        static constexpr char* value = MONOBIND_UINT8_TYPE;
     };
     
     template<>
     struct type_name<uint16_t>
     {
-        constexpr char* value = MONOBIND_USHORT_TYPE;
+        static constexpr char* value = MONOBIND_USHORT_TYPE;
     };
 
     template<>
     struct type_name<uint32_t>
     {
-        constexpr char* value = MONOBIND_UINT_TYPE;
+        static constexpr char* value = MONOBIND_UINT_TYPE;
     };
 
     template<>
     struct type_name<uint64_t>
     {
-        constexpr char* value = MONOBIND_ULONG_TYPE;
+        static constexpr char* value = MONOBIND_ULONG_TYPE;
+    };
+
+    template<>
+    struct type_name<std::string>
+    {
+        static constexpr char* value = MONOBIND_STRING_TYPE;
+    };
+
+    template<>
+    struct type_name<std::wstring>
+    {
+        static constexpr char* value = MONOBIND_WSTRING_TYPE;
     };
 }
