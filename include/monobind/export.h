@@ -28,6 +28,7 @@
 #define MONOBIND_GET(type, method_name) [](uintptr_t x) -> decltype(auto) { return reinterpret_cast<type*>(x)->method_name(); }
 #define MONOBIND_SET(type, method_name) [](uintptr_t x, auto arg) -> void { reinterpret_cast<type*>(x)->method_name(std::move(arg)); }
 #define MONOBIND_METHOD(type, method_name) [](uintptr_t x, auto... args) -> decltype(auto) { return reinterpret_cast<type*>(x)->method_name(std::move(args)...); }
+#define MONOBIND_STATIC_METHOD(type, method_name) [](auto... args) -> decltype(auto) { return type::method_name(std::move(args)...); }
 
 namespace monobind
 {
@@ -74,6 +75,13 @@ namespace monobind
             m_generator.generate_readonly_struct_property<T>(name, std::forward<GetCallable>(get));
             return *this;
         }
+
+        template<typename FunctionSignature, typename Callable>
+        auto& static_method(const char* name, Callable&& callable)
+        {
+            m_generator.generate_static_method<FunctionSignature>(name, std::forward<Callable>(callable));
+            return *this;
+        }
     };
 
     template<typename T>
@@ -117,6 +125,13 @@ namespace monobind
         auto& property(const char* name, GetCallable&& get)
         {
             m_generator.generate_readonly_class_property(name, std::forward<GetCallable>(get));
+            return *this;
+        }
+
+        template<typename FunctionSignature, typename Callable>
+        auto& static_method(const char* name, Callable&& callable)
+        {
+            m_generator.generate_static_method<FunctionSignature>(name, std::forward<Callable>(callable));
             return *this;
         }
     };

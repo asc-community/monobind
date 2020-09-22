@@ -164,6 +164,7 @@ Have you noticed that there is no need to convert types when passing them to mon
 |uint16_t      |uint16 |float   |single |monobind::object             |class_object/any_type |
 |int / int32_t |int    |double  |double |std::vector / std::array     |any_type[]            |
 |uint32_t      |uint   |wchar_t |char   |c-style structure            |struct with std-layout|
+|bool          |bool   |void    |void   |                             |                      |
 
 If you have types which are not trivially converted between mono and native code, you can also defined your own converters:
 ```cs

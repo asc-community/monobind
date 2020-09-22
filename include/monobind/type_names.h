@@ -22,6 +22,7 @@
 
 #include <cstdint>
 
+#define MONOBIND_VOID_TYPE   "void"
 #define MONOBIND_CHAR_TYPE   "byte"
 #define MONOBIND_WCHAR_TYPE  "char"
 #define MONOBIND_SHORT_TYPE  "int16"
@@ -52,6 +53,12 @@ namespace monobind
 {
     template<typename T>
     struct type_name;
+
+    template<>
+    struct type_name<void>
+    {
+        static constexpr char* value = MONOBIND_VOID_TYPE;
+    };
 
     template<>
     struct type_name<char>

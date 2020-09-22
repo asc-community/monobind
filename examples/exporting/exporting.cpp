@@ -29,6 +29,8 @@ public:
     
     const std::string& get_name() const { return name; }
     void set_name(const std::string& n) { name = n; }
+
+    static std::string get_class_name() { return "widget"; }
 };
 
 
@@ -49,6 +51,7 @@ int main()
         .readonly_field("Size", &widget::size)
         .readonly_field("Inner", &widget::inner)
         .property("Name", MONOBIND_GET(widget, get_name), MONOBIND_SET(widget, set_name))
+        .static_method<std::string()>("GetClassName", MONOBIND_STATIC_METHOD(widget, get_class_name))
         ;
 
     monobind::export_struct<vec3>("Vector3", gen)
@@ -58,6 +61,10 @@ int main()
         .readonly_field("Length", &vec3::length)
         .property("Normalized", MONOBIND_GET(vec3, normalized))
         ;
+
+
+    gen.generate_static_method<void(int, std::string)>("Foo", [](int, std::string) {});
+
 
     return 0;
 }

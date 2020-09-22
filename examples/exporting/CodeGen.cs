@@ -33,6 +33,9 @@ class Widget
 	private static extern void set_Name(IntPtr _self, string _value);
 	public string Name { get => get_Name(_nativeHandle); set => set_Name(_nativeHandle, value); }
 
+	[MethodImpl(MethodImplOptions.InternalCall)]
+	public static extern string GetClassName();
+
 }
 
 [StructLayout(LayoutKind.Explicit)]
@@ -51,4 +54,7 @@ struct Vector3
 	private static extern Vector3 get_Normalized(ref Vector3 _self);
 	public Vector3 Normalized => get_Normalized(ref this); 
 }
+
+	[MethodImpl(MethodImplOptions.InternalCall)]
+	public static extern void Foo(int _arg2, string _arg1);
 

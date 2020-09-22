@@ -55,6 +55,19 @@ namespace monobind
             }
             return it->second.c_str();
         }
+        
+        template<typename R>
+        void generate_method_paramater_names(std::string& args, R(*)() = nullptr) { }
+
+        template<typename R, typename T, typename... Args>
+        void generate_method_paramater_names(std::string& res, R(*)(T, Args...) = nullptr)
+        {
+            if(!res.empty()) res += ", "; 
+            res += get_type_name<T>();
+            res += " _arg" + std::to_string(sizeof...(Args) + 1);
+
+            generate_method_paramater_names<R, Args...>(res);
+        }
 
     public:
         code_generator(mono& m, std::ostream& out)
@@ -65,6 +78,7 @@ namespace monobind
             add_type<float>("float");
             add_type<double>("double");
             add_type<bool>("bool");
+            add_type<void>("void");
             add_type<int8_t>("byte");
             add_type<uint8_t>("byte");
             add_type<int16_t>("short");
@@ -268,6 +282,22 @@ namespace monobind
 
             m_out << "\tpublic " << field_type << ' ' << name << " => " << getter << "(ref this); ";
             m_out << '\n';
+        }
+
+        template<typename FunctionSignature, typename Callable>
+        void generate_static_method(const char* name, Callable&& f)
+        {
+            m_mono.add_internal_call<FunctionSignature>(name, std::forward<Callable>(f));
+
+            using FuncInfo = internal_get_function_type<FunctionSignature>;
+
+            std::string arguments;
+            generate_method_paramater_names(arguments, (FunctionSignature*)nullptr);
+
+            const char* return_type = get_type_name<FuncInfo::result_type>();
+
+            m_out << "\t[MethodImpl(MethodImplOptions.InternalCall)]\n";
+            m_out << "\tpublic static extern " << return_type << ' ' << name << '(' << arguments << ");\n\n";
         }
 
         template<typename T>
