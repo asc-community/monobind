@@ -34,6 +34,20 @@ namespace monobind
     class object;
     class method;
 
+    template<typename... Args>
+    void internal_init_params(MonoDomain* domain, void** current) { }
+
+    template<typename T, typename... Args>
+    void internal_init_params(MonoDomain* domain, void** current, T&& t, Args&&... other)
+    {
+        using TypeToConvert = typename std::decay<T>::type;
+        auto converted = to_mono_converter<TypeToConvert>::convert(domain, std::forward<T>(t));
+        static_assert(std::is_pointer<decltype(converted)>::value, "conversion function must return objects by pointer");
+
+        *current = (void*)converted;
+        internal_init_params(domain, current + 1, std::forward<Args>(other)...);
+    }
+
     template<typename T>
     struct internal_deduce_functor_type
     {
@@ -47,8 +61,8 @@ namespace monobind
     template<typename T, typename... Args>
     struct internal_deduce_functor_type<T(Args...)>
     {
-        template<typename... CurrentArgs>
-        static auto invoke(const method& this_ref, MonoObject* self, CurrentArgs&&... args)
+        template<typename Method, typename... CurrentArgs>
+        static auto invoke(const Method& this_ref, MonoObject* self, CurrentArgs&&... args)
         {
             std::array<void*, sizeof...(args)> params;
             internal_init_params(this_ref.get_domain(), params.data(), std::forward<CurrentArgs>(args)...);
@@ -72,20 +86,6 @@ namespace monobind
 
         static constexpr size_t argument_count = sizeof...(Args);
     };
-
-    template<typename... Args>
-    void internal_init_params(MonoDomain* domain, void** current) { }
-
-    template<typename T, typename... Args>
-    void internal_init_params(MonoDomain* domain, void** current, T&& t, Args&&... other)
-    {
-        using TypeToConvert = typename std::decay<T>::type;
-        auto converted = to_mono_converter<TypeToConvert>::convert(domain, std::forward<T>(t));
-        static_assert(std::is_pointer<decltype(converted)>::value, "conversion function must return objects by pointer");
-
-        *current = (void*)converted;
-        internal_init_params(domain, current + 1, std::forward<Args>(other)...);
-    }
 
     class method
     {
@@ -115,8 +115,8 @@ namespace monobind
             return internal_deduce_functor_type<T>::invoke(*this, self, std::forward<Args>(args)...);
         }
 
-        template<typename T, typename... Args>
-        decltype(auto) invoke_instance(const object& object, Args&&... args) const
+        template<typename Object, typename T, typename... Args>
+        decltype(auto) invoke_instance(const Object& object, Args&&... args) const
         {
             return invoke_instance<T>(object.get_pointer(), std::forward<Args>(args)...);
         }

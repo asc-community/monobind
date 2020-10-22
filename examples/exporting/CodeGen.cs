@@ -7,32 +7,41 @@ class Widget
 	private IntPtr _nativeHandle;
 	public Widget(IntPtr nativeHandle) { _nativeHandle = nativeHandle; }
 
+	// Widget::get_Width(System.IntPtr,uint)
 	[MethodImpl(MethodImplOptions.InternalCall)]
 	private static extern int get_Width(IntPtr _self, uint _offset);
+	// Widget::set_Width(System.IntPtr,uint,int)
 	[MethodImpl(MethodImplOptions.InternalCall)]
 	private static extern void set_Width(IntPtr _self, uint _offset, int _value);
 	public int Width { get => get_Width(_nativeHandle, 56); set => set_Width(_nativeHandle, 56, value); }
 
+	// Widget::get_Height(System.IntPtr,uint)
 	[MethodImpl(MethodImplOptions.InternalCall)]
 	private static extern int get_Height(IntPtr _self, uint _offset);
+	// Widget::set_Height(System.IntPtr,uint,int)
 	[MethodImpl(MethodImplOptions.InternalCall)]
 	private static extern void set_Height(IntPtr _self, uint _offset, int _value);
 	public int Height { get => get_Height(_nativeHandle, 60); set => set_Height(_nativeHandle, 60, value); }
 
+	// Widget::get_Size(System.IntPtr,uint)
 	[MethodImpl(MethodImplOptions.InternalCall)]
 	private static extern int get_Size(System.IntPtr _self, uint _offset);
 	public int Size => get_Size(_nativeHandle, 64);
 
+	// Widget::get_Inner(System.IntPtr,uint)
 	[MethodImpl(MethodImplOptions.InternalCall)]
 	private static extern Vector3 get_Inner(System.IntPtr _self, uint _offset);
 	public Vector3 Inner => get_Inner(_nativeHandle, 40);
 
+	// Widget::get_Name(System.IntPtr)
 	[MethodImpl(MethodImplOptions.InternalCall)]
 	private static extern string get_Name(IntPtr _self);
+	// Widget::set_Name(System.IntPtr,string)
 	[MethodImpl(MethodImplOptions.InternalCall)]
 	private static extern void set_Name(IntPtr _self, string _value);
 	public string Name { get => get_Name(_nativeHandle); set => set_Name(_nativeHandle, value); }
 
+	// Widget::GetClassName()
 	[MethodImpl(MethodImplOptions.InternalCall)]
 	public static extern string GetClassName();
 
@@ -50,11 +59,13 @@ struct Vector3
 	[FieldOffset(12)] private float _Length;
 	public float Length => _Length;
 
+	// Vector3::get_Normalized(Vector3*)
 	[MethodImpl(MethodImplOptions.InternalCall)]
 	private static extern Vector3 get_Normalized(ref Vector3 _self);
 	public Vector3 Normalized => get_Normalized(ref this); 
 }
 
+	// Widget::Foo(int,string)
 	[MethodImpl(MethodImplOptions.InternalCall)]
 	public static extern void Foo(int _arg2, string _arg1);
 

@@ -79,7 +79,7 @@ namespace monobind
         template<typename FunctionSignature, typename Callable>
         auto& static_method(const char* name, Callable&& callable)
         {
-            m_generator.generate_static_method<FunctionSignature>(name, std::forward<Callable>(callable));
+            m_generator.generate_static_method<T, FunctionSignature>(name, std::forward<Callable>(callable));
             return *this;
         }
     };
@@ -117,7 +117,7 @@ namespace monobind
         template<typename GetCallable, typename SetCallable>
         auto& property(const char* name, GetCallable&& get, SetCallable&& set)
         {
-            m_generator.generate_class_property(name, std::forward<GetCallable>(get), std::forward<SetCallable>(set));
+            m_generator.generate_class_property<T>(name, std::forward<GetCallable>(get), std::forward<SetCallable>(set));
             return *this;
         }
 
@@ -131,7 +131,7 @@ namespace monobind
         template<typename FunctionSignature, typename Callable>
         auto& static_method(const char* name, Callable&& callable)
         {
-            m_generator.generate_static_method<FunctionSignature>(name, std::forward<Callable>(callable));
+            m_generator.generate_static_method<T, FunctionSignature>(name, std::forward<Callable>(callable));
             return *this;
         }
     };

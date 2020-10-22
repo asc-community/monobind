@@ -119,7 +119,7 @@ namespace monobind
                 throw_exception("could not found appropriate constructor for given class");
             }
             method constructor(m_domain, ctor);
-            constructor.invoke_instance<void(Args...)>(*this, std::forward<Args>(args)...);
+            constructor.invoke_instance<object, void(Args...)>(*this, std::forward<Args>(args)...);
         }
 
         object(field_wrapper wrapper)
@@ -232,11 +232,12 @@ namespace monobind
         {
             using FunctorTraits = internal_get_function_type<FunctionSignature>;
             auto method_type = get_method_pointer(method_name);
-            auto functor = [f = method(m_domain, method_type), o = m_object](auto&&... args) mutable -> FunctorTraits::result_type
+            auto functor = [f = method(m_domain, method_type), o = m_object](auto&&... args) mutable -> typename FunctorTraits::result_type
             {
                 return f.invoke_instance<FunctionSignature>(o, std::forward<decltype(args)>(args)...);
             };
-            return FunctorTraits::type(std::move(functor));
+            using MethodType = typename FunctorTraits::type;
+            return MethodType(std::move(functor));
         }
 
         template<typename FunctionSignature>
@@ -244,7 +245,7 @@ namespace monobind
         {
             using FunctorTraits = internal_get_function_type<FunctionSignature>;
             auto method_type = get_method_pointer(method_name);
-            auto functor = [f = method(m_domain, method_type)](auto&&... args) mutable->FunctorTraits::result_type
+            auto functor = [f = method(m_domain, method_type)](auto&&... args) mutable-> typename FunctorTraits::result_type
             {
                 return f.invoke_static<FunctionSignature>(std::forward<decltype(args)>(args)...);
             };

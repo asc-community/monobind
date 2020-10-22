@@ -30,7 +30,7 @@ namespace monobind
     template<typename T>
     struct to_mono_converter
     {
-        static auto convert(MonoDomain* domain, typename const std::decay<T>::type& t)
+        static auto convert(MonoDomain* domain, const typename std::decay<T>::type& t)
         {
             return std::addressof(t);
         }

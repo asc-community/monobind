@@ -241,9 +241,10 @@ namespace monobind
         {
             using FunctorTraits = internal_get_function_type<FunctionSignature>;
             auto method_type = get_method_pointer(method_name);
-            auto functor = [f = method(m_domain, method_type), o = m_object](auto&&... args) mutable->FunctorTraits::result_type
+
+            auto functor = [f = method(get_current_domain(), method_type)](auto&&... args) mutable -> typename FunctorTraits::result_type
             {
-                return f.invoke_static<FunctionSignature>(o, std::forward<decltype(args)>(args)...);
+                return f.invoke_static<FunctionSignature>(std::forward<decltype(args)>(args)...);
             };
             return FunctorTraits::type(std::move(functor));
         }

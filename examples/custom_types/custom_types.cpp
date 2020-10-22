@@ -35,7 +35,7 @@ int main()
 
             player["_health"] = player_health - monster_damage;
 
-            std::cout << monster_name << " damaged " << player_name << " for " << monster_damage << " health";
+            std::cout << monster_name << " damaged " << player_name << " for " << monster_damage << " health" << std::endl;
         }
     );
 

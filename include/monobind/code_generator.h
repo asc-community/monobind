@@ -69,6 +69,18 @@ namespace monobind
             generate_method_paramater_names<R, Args...>(res);
         }
 
+        template<typename R>
+        void generate_method_paramater_types(std::string& args, R(*)() = nullptr) {}
+
+        template<typename R, typename T, typename... Args>
+        void generate_method_paramater_types(std::string& res, R(*)(T, Args...) = nullptr)
+        {
+            if (!res.empty()) res += ",";
+            res += get_type_name<T>();
+
+            generate_method_paramater_types<R, Args...>(res);
+        }
+
     public:
         code_generator(mono& m, std::ostream& out)
             : m_out(out), m_mono(m)
@@ -150,23 +162,29 @@ namespace monobind
             auto setter = (std::string)"set_" + field_name;
 
             const char* field_type = get_type_name<X>();
+            const char* class_type = get_type_name<T>();
             size_t field_offset = internal_get_member_offset(f);
 
-            m_mono.add_internal_call<X(uintptr_t, size_t)>(getter.c_str(),
+            auto getter_sig = (std::string)class_type + "::" + getter + "(System.IntPtr,uint)";
+            auto setter_sig = (std::string)class_type + "::" + setter + "(System.IntPtr,uint," + field_type + ')';
+
+            m_mono.add_internal_call<X(uintptr_t, size_t)>(getter_sig.c_str(),
                 [](uintptr_t ptr, size_t offset) -> X
                 {
                     return *reinterpret_cast<X*>((uint8_t*)ptr + offset);
                 });
 
-            m_mono.add_internal_call<void(uintptr_t, size_t, X)>(setter.c_str(),
+            m_mono.add_internal_call<void(uintptr_t, size_t, X)>(setter_sig.c_str(),
                 [](uintptr_t ptr, size_t offset, X x)
                 {
                     *reinterpret_cast<X*>((uint8_t*)ptr + offset) = std::move(x);
                 });
 
+            m_out << "\t// " << getter_sig << '\n';
             m_out << "\t[MethodImpl(MethodImplOptions.InternalCall)]\n";
             m_out << "\tprivate static extern " << field_type << ' ' << getter << "(IntPtr _self, uint _offset);\n";
-
+            
+            m_out << "\t// " << setter_sig << '\n';
             m_out << "\t[MethodImpl(MethodImplOptions.InternalCall)]\n";
             m_out << "\tprivate static extern void " << setter << "(IntPtr _self, uint _offset, " << field_type << " _value);\n";
 
@@ -182,21 +200,25 @@ namespace monobind
             auto getter = (std::string)"get_" + field_name;
 
             const char* field_type = get_type_name<X>();
+            const char* class_type = get_type_name<T>();
             size_t field_offset = internal_get_member_offset(f);
 
-            m_mono.add_internal_call<X(uintptr_t, size_t)>(getter.c_str(),
+            auto getter_sig = (std::string)class_type + "::" + getter + "(System.IntPtr,uint)";
+
+            m_mono.add_internal_call<X(uintptr_t, size_t)>(getter_sig.c_str(),
                 [](uintptr_t ptr, size_t offset) -> X
                 {
                     return *reinterpret_cast<X*>((uint8_t*)ptr + offset);
                 });
 
+            m_out << "\t// " << getter_sig << '\n';
             m_out << "\t[MethodImpl(MethodImplOptions.InternalCall)]\n";
             m_out << "\tprivate static extern " << field_type << ' ' << getter << "(System.IntPtr _self, uint _offset);\n";
 
             m_out << "\tpublic " << field_type << ' ' << field_name << " => " << getter << "(_nativeHandle, " << field_offset << ");\n\n";
         }
 
-        template<typename GetCallable, typename SetCallable>
+        template<typename T, typename GetCallable, typename SetCallable>
         void generate_class_property(const char* name, GetCallable&& get, SetCallable&& set)
         {
             using ReturnType = decltype(get(uintptr_t()));
@@ -205,13 +227,19 @@ namespace monobind
             auto setter = (std::string)"set_" + name;
 
             const char* field_type = get_type_name<ReturnType>();
+            const char* class_type = get_type_name<T>();
 
-            m_mono.add_internal_call<ReturnType(uintptr_t)>(getter.c_str(), std::forward<GetCallable>(get));
-            m_mono.add_internal_call<void(uintptr_t, ReturnType)>(setter.c_str(), std::forward<SetCallable>(set));
+            auto getter_sig = (std::string)class_type + "::" + getter + "(System.IntPtr)";
+            auto setter_sig = (std::string)class_type + "::" + setter + "(System.IntPtr," + field_type + ')';
 
+            m_mono.add_internal_call<ReturnType(uintptr_t)>(getter_sig.c_str(), std::forward<GetCallable>(get));
+            m_mono.add_internal_call<void(uintptr_t, ReturnType)>(setter_sig.c_str(), std::forward<SetCallable>(set));
+
+            m_out << "\t// " << getter_sig << '\n';
             m_out << "\t[MethodImpl(MethodImplOptions.InternalCall)]\n";
             m_out << "\tprivate static extern " << field_type << ' ' << getter << "(IntPtr _self);\n";
 
+            m_out << "\t// " << setter_sig << '\n';
             m_out << "\t[MethodImpl(MethodImplOptions.InternalCall)]\n";
             m_out << "\tprivate static extern void " << setter << "(IntPtr _self, " << field_type << " _value);\n";
 
@@ -221,7 +249,7 @@ namespace monobind
             m_out << '\n';
         }
 
-        template<typename GetCallable>
+        template<typename T, typename GetCallable>
         void generate_readonly_class_property(const char* name, GetCallable&& get)
         {
             using ReturnType = decltype(get(uintptr_t()));
@@ -229,9 +257,13 @@ namespace monobind
             auto getter = (std::string)"get_" + name;
 
             const char* field_type = get_type_name<ReturnType>();
+            const char* class_type = get_type_name<T>();
+            
+            auto getter_sig = (std::string)class_type + "::" + getter + "(System.IntPtr)";
 
-            m_mono.add_internal_call<ReturnType(uintptr_t)>(getter.c_str(), std::forward<GetCallable>(get));
+            m_mono.add_internal_call<ReturnType(uintptr_t)>(getter_sig.c_str(), std::forward<GetCallable>(get));
 
+            m_out << "\t// " << getter_sig << '\n';
             m_out << "\t[MethodImpl(MethodImplOptions.InternalCall)]\n";
             m_out << "\tprivate static extern " << field_type << ' ' << getter << "(IntPtr _self);\n";
 
@@ -250,12 +282,17 @@ namespace monobind
             const char* field_type = get_type_name<ReturnType>();
             const char* struct_type = get_type_name<T>();
 
-            m_mono.add_internal_call<ReturnType(uintptr_t)>(getter.c_str(), std::forward<GetCallable>(get));
-            m_mono.add_internal_call<void(uintptr_t, ReturnType)>(setter.c_str(), std::forward<SetCallable>(set));
+            auto getter_sig = (std::string)struct_type + "::" + getter + '(' + struct_type "*)";
+            auto setter_sig = (std::string)struct_type + "::" + getter + '(' + struct_type "*," + field_type + ')';
 
+            m_mono.add_internal_call<ReturnType(uintptr_t)>(getter_sig.c_str(), std::forward<GetCallable>(get));
+            m_mono.add_internal_call<void(uintptr_t, ReturnType)>(setter_sig.c_str(), std::forward<SetCallable>(set));
+
+            m_out << "\t// " << getter_sig << '\n';
             m_out << "\t[MethodImpl(MethodImplOptions.InternalCall)]\n";
             m_out << "\tprivate static extern " << field_type << ' ' << getter << "(ref " << struct_type << " _self);\n";
 
+            m_out << "\t// " << setter_sig << '\n';
             m_out << "\t[MethodImpl(MethodImplOptions.InternalCall)]\n";
             m_out << "\tprivate static extern void " << setter << "(ref " << struct_type << " _self, " << field_type << " _value);\n";
 
@@ -275,8 +312,11 @@ namespace monobind
             const char* field_type = get_type_name<ReturnType>();
             const char* struct_type = get_type_name<T>();
 
-            m_mono.add_internal_call<ReturnType(uintptr_t)>(getter.c_str(), std::forward<GetCallable>(get));
+            auto getter_sig = (std::string)struct_type + "::" + getter + '(' + struct_type + "*)";
 
+            m_mono.add_internal_call<ReturnType(uintptr_t)>(getter_sig.c_str(), std::forward<GetCallable>(get));
+
+            m_out << "\t// " << getter_sig << '\n';
             m_out << "\t[MethodImpl(MethodImplOptions.InternalCall)]\n";
             m_out << "\tprivate static extern " << field_type << ' ' << getter << "(ref " << struct_type << " _self);\n";
 
@@ -284,18 +324,25 @@ namespace monobind
             m_out << '\n';
         }
 
-        template<typename FunctionSignature, typename Callable>
+        template<typename T, typename FunctionSignature, typename Callable>
         void generate_static_method(const char* name, Callable&& f)
         {
-            m_mono.add_internal_call<FunctionSignature>(name, std::forward<Callable>(f));
-
             using FuncInfo = internal_get_function_type<FunctionSignature>;
 
             std::string arguments;
             generate_method_paramater_names(arguments, (FunctionSignature*)nullptr);
 
-            const char* return_type = get_type_name<FuncInfo::result_type>();
+            const char* return_type = get_type_name<typename FuncInfo::result_type>();
+            const char* class_type = get_type_name<T>();
 
+            std::string sig_args;
+            generate_method_paramater_types(sig_args, (FunctionSignature*)nullptr);
+
+            auto method_sig = (std::string)class_type + "::" + name + '(' + sig_args + ')';
+
+            m_mono.add_internal_call<FunctionSignature>(method_sig.c_str(), std::forward<Callable>(f));
+
+            m_out << "\t// " << method_sig << '\n';
             m_out << "\t[MethodImpl(MethodImplOptions.InternalCall)]\n";
             m_out << "\tpublic static extern " << return_type << ' ' << name << '(' << arguments << ");\n\n";
         }

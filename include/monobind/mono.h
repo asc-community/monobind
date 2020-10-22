@@ -84,8 +84,9 @@ namespace monobind
     struct internal_function_wrapper;
 
     template<typename R, typename... Args>
-    class internal_function_wrapper<R(Args...)>
+    struct internal_function_wrapper<R(Args...)>
     {
+    private:
         template<typename F, typename MonoReturnType, typename... MonoArgs>
         static auto invoke_inner_function(MonoArgs&&... args)
             -> typename std::enable_if<!std::is_void<MonoReturnType>::value, MonoReturnType>::type
@@ -204,8 +205,8 @@ namespace monobind
         template<typename FunctionSignature, typename F>
         void add_internal_call(const char* signature, F&& f)
         {
-            auto wrapper = internal_function_wrapper<FunctionSignature>::get<F>();
-            mono_add_internal_call(signature, static_cast<const void*>(wrapper));
+            auto wrapper = internal_function_wrapper<FunctionSignature>::template get<F>();
+            mono_add_internal_call(signature, reinterpret_cast<const void*>(wrapper));
         }
     };
 }

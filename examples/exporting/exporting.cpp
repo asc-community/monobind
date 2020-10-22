@@ -63,7 +63,7 @@ int main()
         ;
 
 
-    gen.generate_static_method<void(int, std::string)>("Foo", [](int, std::string) {});
+    gen.generate_static_method<widget, void(int, std::string)>("Foo", [](int, std::string) {});
 
 
     return 0;
