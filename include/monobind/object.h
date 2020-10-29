@@ -173,6 +173,13 @@ namespace monobind
             return get_class().get_method_pointer(name);
         }
 
+        MonoMethod* get_virtual_method_pointer(const char* name, MonoClass* originalMethodOwner) const
+        {
+            MONOBIND_ASSERT(mono_class_is_assignable_from(originalMethodOwner, get_class().get_pointer()));
+            auto originalMethod = class_type(originalMethodOwner).get_method_pointer(name);
+            return mono_object_get_virtual_method(m_object, originalMethod);
+        }
+
         bool has_field(const char* field_name) const
         {
             return get_class().has_field(field_name);
@@ -186,6 +193,15 @@ namespace monobind
         bool has_method(const char* name) const
         {
             return get_class().has_method(name);
+        }
+        bool has_virtual_method(const char* name, MonoClass* originalMethodOwner) const
+        {
+            if (!mono_class_is_assignable_from(originalMethodOwner, get_class().get_pointer()))
+            {
+                return false;
+            }
+            auto originalMethod = class_type(originalMethodOwner).get_method_pointer(name);
+            return mono_object_get_virtual_method(m_object, originalMethod);
         }
 
         field_wrapper operator[](const char* field_name) const
@@ -238,6 +254,18 @@ namespace monobind
             };
             using MethodType = typename FunctorTraits::type;
             return MethodType(std::move(functor));
+        }
+
+        template<typename FunctionSignature>
+        auto get_virtual_method(const char* method_name, MonoClass* originalMethodOwner)
+        {
+            using FunctorTraits = internal_get_function_type<FunctionSignature>;
+            auto method_type = get_virtual_method_pointer(method_name, originalMethodOwner);
+            auto functor = [f = method(m_domain, method_type), o = m_object](auto&&... args) mutable->FunctorTraits::result_type
+            {
+                return f.invoke_instance<FunctionSignature>(o, std::forward<decltype(args)>(args)...);
+            };
+            return FunctorTraits::type(std::move(functor));
         }
 
         template<typename FunctionSignature>

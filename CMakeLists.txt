@@ -6,17 +6,22 @@ set(CMAKE_CXX_STANDARD 14)
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
+SET(MONO_ONLY_LIBRARIES_REQUIRED ON CACHE BOOL "" FORCE)
 find_package(Mono REQUIRED)
+
+message(" dirs lib : ${MONO_LIBRARY_DIRS}")
 
 if(MONO_FOUND)
     message("Found Mono ${MONO_VERSION}")
+    message("Found exec ${MONO_EXECUTABLE}")
 else()
     message(FATAL_ERROR "Could not find Mono!")
 endif()
 
-add_compile_definitions(MONOBIND_MONO_ROOT="${MONO_ROOT_DIR}")
-include_directories(${MONO_INCLUDE_DIR})
+add_compile_definitions(MONOBIND_MONO_ROOT="${MONO_ROOT}")
+include_directories(${MONO_INCLUDE_DIRS})
 link_libraries(${MONO_LIBRARIES})
+link_directories(${MONO_LIBRARY_DIRS})
 
 option(MONOBIND_ENABLE_EXCEPTIONS "compile with exceptions enabled" TRUE)
 option(MONOBIND_BUILD_TESTS "build monobind tests" TRUE)

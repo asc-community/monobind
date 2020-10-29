@@ -205,6 +205,7 @@ namespace monobind
                 throw_exception("invalid method signature");
             }
             MonoMethod* m = mono_method_desc_search_in_class(desc, m_class);
+            mono_method_desc_free(desc);
             return m != nullptr;
         }
 
