@@ -18,7 +18,7 @@ else()
     message(FATAL_ERROR "Could not find Mono!")
 endif()
 
-add_compile_definitions(MONOBIND_MONO_ROOT="${MONO_ROOT}")
+add_compile_definitions(MONOBIND_MONO_ROOT="${MONO_ROOT_DIR}")
 include_directories(${MONO_INCLUDE_DIRS})
 link_libraries(${MONO_LIBRARIES})
 link_directories(${MONO_LIBRARY_DIRS})
