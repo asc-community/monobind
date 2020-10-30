@@ -6,14 +6,10 @@ set(CMAKE_CXX_STANDARD 14)
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-SET(MONO_ONLY_LIBRARIES_REQUIRED ON CACHE BOOL "" FORCE)
 find_package(Mono REQUIRED)
-
-message(" dirs lib : ${MONO_LIBRARY_DIRS}")
 
 if(MONO_FOUND)
     message("Found Mono ${MONO_VERSION}")
-    message("Found exec ${MONO_EXECUTABLE}")
 else()
     message(FATAL_ERROR "Could not find Mono!")
 endif()
