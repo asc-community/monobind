@@ -187,13 +187,23 @@ namespace monobind
             {
                 throw_exception("invalid method signature");
             }
-            MonoMethod* m = mono_method_desc_search_in_class(desc, m_class);
-            mono_method_desc_free(desc);
-            if (m == nullptr)
+            // handle virtual methods
+            MonoClass* current_class = m_class;
+            while (current_class != nullptr)
             {
-                throw_exception("could not find method in class");
+                MonoMethod* m = mono_method_desc_search_in_class(desc, current_class);
+                if (m != nullptr)
+                {
+                    mono_method_desc_free(desc);
+                    return m; // method was found
+                }
+                current_class = mono_class_get_parent(current_class);
             }
-            return m;
+
+            // no method was found, throw exception
+            mono_method_desc_free(desc);
+            throw_exception("could not find method in class");
+            return nullptr;
         }
 
         bool has_method(const char* name) const
@@ -284,6 +294,12 @@ namespace monobind
         {
             MONOBIND_ASSERT(m_class != nullptr);
             return class_type(mono_class_get_nesting_type(m_class));
+        }
+
+        class_type get_parent_type() const
+        {
+            MONOBIND_ASSERT(m_class != nullptr);
+            return class_type(mono_class_get_parent(m_class));
         }
 
         const char* get_name() const
