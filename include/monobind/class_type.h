@@ -113,6 +113,30 @@ namespace monobind
             mono_runtime_invoke(m, nullptr, nullptr, nullptr);
         }
 
+        MonoMethod* get_method_pointer_or_null(const char* name) const
+        {
+            auto desc = mono_method_desc_new(name, false);
+            if (desc == nullptr)
+            {
+                throw_exception("invalid method signature");
+            }
+            // also handle virtual methods
+            MonoClass* current_class = m_class;
+            while (current_class != nullptr)
+            {
+                MonoMethod* m = mono_method_desc_search_in_class(desc, current_class);
+                if (m != nullptr)
+                {
+                    mono_method_desc_free(desc);
+                    return m; // method was found
+                }
+                current_class = mono_class_get_parent(current_class);
+            }
+            // method was not found
+            mono_method_desc_free(desc);
+            return nullptr;
+        }
+
     public:
 
         class_type() = default;
@@ -182,13 +206,7 @@ namespace monobind
         MonoMethod* get_method_pointer(const char* name) const
         {
             MONOBIND_ASSERT(m_class != nullptr);
-            auto desc = mono_method_desc_new(name, false);
-            if (desc == nullptr)
-            {
-                throw_exception("invalid method signature");
-            }
-            MonoMethod* m = mono_method_desc_search_in_class(desc, m_class);
-            mono_method_desc_free(desc);
+            MonoMethod* m = get_method_pointer_or_null(name);
             if (m == nullptr)
             {
                 throw_exception("could not find method in class");
@@ -199,12 +217,7 @@ namespace monobind
         bool has_method(const char* name) const
         {
             MONOBIND_ASSERT(m_class != nullptr);
-            auto desc = mono_method_desc_new(name, false);
-            if (desc == nullptr)
-            {
-                throw_exception("invalid method signature");
-            }
-            MonoMethod* m = mono_method_desc_search_in_class(desc, m_class);
+            MonoMethod* m = get_method_pointer_or_null(name);
             return m != nullptr;
         }
 
@@ -283,6 +296,12 @@ namespace monobind
         {
             MONOBIND_ASSERT(m_class != nullptr);
             return class_type(mono_class_get_nesting_type(m_class));
+        }
+
+        class_type get_parent_type() const
+        {
+            MONOBIND_ASSERT(m_class != nullptr);
+            return class_type(mono_class_get_parent(m_class));
         }
 
         const char* get_name() const

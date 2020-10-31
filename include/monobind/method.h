@@ -115,7 +115,7 @@ namespace monobind
             return internal_deduce_functor_type<T>::invoke(*this, self, std::forward<Args>(args)...);
         }
 
-        template<typename Object, typename T, typename... Args>
+        template<typename T, typename... Args, typename Object>
         decltype(auto) invoke_instance(const Object& object, Args&&... args) const
         {
             return invoke_instance<T>(object.get_pointer(), std::forward<Args>(args)...);

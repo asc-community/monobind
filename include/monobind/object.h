@@ -119,7 +119,7 @@ namespace monobind
                 throw_exception("could not found appropriate constructor for given class");
             }
             method constructor(m_domain, ctor);
-            constructor.invoke_instance<object, void(Args...)>(*this, std::forward<Args>(args)...);
+            constructor.invoke_instance<void(Args...)>(*this, std::forward<Args>(args)...);
         }
 
         object(field_wrapper wrapper)
