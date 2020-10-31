@@ -187,15 +187,6 @@ namespace monobind
         {
             return get_class().has_method(name);
         }
-        bool has_virtual_method(const char* name, MonoClass* originalMethodOwner) const
-        {
-            if (!mono_class_is_assignable_from(originalMethodOwner, get_class().get_pointer()))
-            {
-                return false;
-            }
-            auto originalMethod = class_type(originalMethodOwner).get_method_pointer(name);
-            return mono_object_get_virtual_method(m_object, originalMethod);
-        }
 
         field_wrapper operator[](const char* field_name) const
         {
