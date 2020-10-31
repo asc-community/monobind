@@ -25,9 +25,9 @@
 #include <monobind/converters_fwd.h>
 #include <monobind/code_generator.h>
 
-#define MONOBIND_GET(type, method_name) [](uintptr_t x) -> decltype(auto) { return reinterpret_cast<type*>(x)->method_name(); }
-#define MONOBIND_SET(type, method_name) [](uintptr_t x, auto arg) -> void { reinterpret_cast<type*>(x)->method_name(std::move(arg)); }
-#define MONOBIND_METHOD(type, method_name) [](uintptr_t x, auto... args) -> decltype(auto) { return reinterpret_cast<type*>(x)->method_name(std::move(args)...); }
+#define MONOBIND_GET(type, method_name) [](uintptr_t ptr) -> decltype(auto) { return reinterpret_cast<type*>(ptr)->method_name(); }
+#define MONOBIND_SET(type, method_name) [](uintptr_t ptr, auto arg) -> void { reinterpret_cast<type*>(ptr)->method_name(std::move(arg)); }
+#define MONOBIND_METHOD(type, method_name) [](uintptr_t ptr, auto... args) -> decltype(auto) { return reinterpret_cast<type*>(ptr)->method_name(std::move(args)...); }
 #define MONOBIND_STATIC_METHOD(type, method_name) [](auto... args) -> decltype(auto) { return type::method_name(std::move(args)...); }
 
 namespace monobind

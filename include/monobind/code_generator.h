@@ -55,14 +55,14 @@ namespace monobind
             }
             return it->second.c_str();
         }
-        
+
         template<typename R>
-        void generate_method_paramater_names(std::string& args, R(*)() = nullptr) { }
+        void generate_method_paramater_names(std::string& args, R(*)() = nullptr) {}
 
         template<typename R, typename T, typename... Args>
         void generate_method_paramater_names(std::string& res, R(*)(T, Args...) = nullptr)
         {
-            if(!res.empty()) res += ", "; 
+            if (!res.empty()) res += ", ";
             res += get_type_name<T>();
             res += " _arg" + std::to_string(sizeof...(Args) + 1);
 
@@ -165,17 +165,17 @@ namespace monobind
             const char* class_type = get_type_name<T>();
             size_t field_offset = internal_get_member_offset(f);
 
-            auto getter_sig = (std::string)class_type + "::" + getter + "(System.IntPtr,uint)";
-            auto setter_sig = (std::string)class_type + "::" + setter + "(System.IntPtr,uint," + field_type + ')';
+            auto getter_sig = (std::string)class_type + "::" + getter + "(intptr,uint)";
+            auto setter_sig = (std::string)class_type + "::" + setter + "(intptr,uint," + field_type + ')';
 
-            m_mono.add_internal_call<X(uintptr_t, size_t)>(getter_sig.c_str(),
-                [](uintptr_t ptr, size_t offset) -> X
+            m_mono.add_internal_call<X(uintptr_t, uint32_t)>(getter_sig.c_str(),
+                [](uintptr_t ptr, uint32_t offset) -> X
                 {
                     return *reinterpret_cast<X*>((uint8_t*)ptr + offset);
                 });
 
-            m_mono.add_internal_call<void(uintptr_t, size_t, X)>(setter_sig.c_str(),
-                [](uintptr_t ptr, size_t offset, X x)
+            m_mono.add_internal_call<void(uintptr_t, uint32_t, X)>(setter_sig.c_str(),
+                [](uintptr_t ptr, uint32_t offset, X x)
                 {
                     *reinterpret_cast<X*>((uint8_t*)ptr + offset) = std::move(x);
                 });
@@ -183,7 +183,7 @@ namespace monobind
             m_out << "\t// " << getter_sig << '\n';
             m_out << "\t[MethodImpl(MethodImplOptions.InternalCall)]\n";
             m_out << "\tprivate static extern " << field_type << ' ' << getter << "(IntPtr _self, uint _offset);\n";
-            
+
             m_out << "\t// " << setter_sig << '\n';
             m_out << "\t[MethodImpl(MethodImplOptions.InternalCall)]\n";
             m_out << "\tprivate static extern void " << setter << "(IntPtr _self, uint _offset, " << field_type << " _value);\n";
@@ -203,17 +203,17 @@ namespace monobind
             const char* class_type = get_type_name<T>();
             size_t field_offset = internal_get_member_offset(f);
 
-            auto getter_sig = (std::string)class_type + "::" + getter + "(System.IntPtr,uint)";
+            auto getter_sig = (std::string)class_type + "::" + getter + "(intptr,uint)";
 
-            m_mono.add_internal_call<X(uintptr_t, size_t)>(getter_sig.c_str(),
-                [](uintptr_t ptr, size_t offset) -> X
+            m_mono.add_internal_call<X(uintptr_t, uint32_t)>(getter_sig.c_str(),
+                [](uintptr_t ptr, uint32_t offset) -> X
                 {
                     return *reinterpret_cast<X*>((uint8_t*)ptr + offset);
                 });
 
             m_out << "\t// " << getter_sig << '\n';
             m_out << "\t[MethodImpl(MethodImplOptions.InternalCall)]\n";
-            m_out << "\tprivate static extern " << field_type << ' ' << getter << "(System.IntPtr _self, uint _offset);\n";
+            m_out << "\tprivate static extern " << field_type << ' ' << getter << "(IntPtr _self, uint _offset);\n";
 
             m_out << "\tpublic " << field_type << ' ' << field_name << " => " << getter << "(_nativeHandle, " << field_offset << ");\n\n";
         }
@@ -229,8 +229,8 @@ namespace monobind
             const char* field_type = get_type_name<ReturnType>();
             const char* class_type = get_type_name<T>();
 
-            auto getter_sig = (std::string)class_type + "::" + getter + "(System.IntPtr)";
-            auto setter_sig = (std::string)class_type + "::" + setter + "(System.IntPtr," + field_type + ')';
+            auto getter_sig = (std::string)class_type + "::" + getter + "(intptr)";
+            auto setter_sig = (std::string)class_type + "::" + setter + "(intptr," + field_type + ')';
 
             m_mono.add_internal_call<ReturnType(uintptr_t)>(getter_sig.c_str(), std::forward<GetCallable>(get));
             m_mono.add_internal_call<void(uintptr_t, ReturnType)>(setter_sig.c_str(), std::forward<SetCallable>(set));
@@ -258,8 +258,8 @@ namespace monobind
 
             const char* field_type = get_type_name<ReturnType>();
             const char* class_type = get_type_name<T>();
-            
-            auto getter_sig = (std::string)class_type + "::" + getter + "(System.IntPtr)";
+
+            auto getter_sig = (std::string)class_type + "::" + getter + "(intptr)";
 
             m_mono.add_internal_call<ReturnType(uintptr_t)>(getter_sig.c_str(), std::forward<GetCallable>(get));
 
@@ -282,8 +282,8 @@ namespace monobind
             const char* field_type = get_type_name<ReturnType>();
             const char* struct_type = get_type_name<T>();
 
-            auto getter_sig = (std::string)struct_type + "::" + getter + '(' + struct_type "*)";
-            auto setter_sig = (std::string)struct_type + "::" + getter + '(' + struct_type "*," + field_type + ')';
+            auto getter_sig = (std::string)struct_type + "::" + getter + '(' + struct_type "&)";
+            auto setter_sig = (std::string)struct_type + "::" + getter + '(' + struct_type "&," + field_type + ')';
 
             m_mono.add_internal_call<ReturnType(uintptr_t)>(getter_sig.c_str(), std::forward<GetCallable>(get));
             m_mono.add_internal_call<void(uintptr_t, ReturnType)>(setter_sig.c_str(), std::forward<SetCallable>(set));
@@ -312,7 +312,7 @@ namespace monobind
             const char* field_type = get_type_name<ReturnType>();
             const char* struct_type = get_type_name<T>();
 
-            auto getter_sig = (std::string)struct_type + "::" + getter + '(' + struct_type + "*)";
+            auto getter_sig = (std::string)struct_type + "::" + getter + '(' + struct_type + "&)";
 
             m_mono.add_internal_call<ReturnType(uintptr_t)>(getter_sig.c_str(), std::forward<GetCallable>(get));
 

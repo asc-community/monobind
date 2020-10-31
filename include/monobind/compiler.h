@@ -32,8 +32,9 @@ namespace monobind
     template<typename T, typename U, typename... Args>
     void internal_append_to_command(T&& command, U&& to_append, Args&&... other)
     {
-        command += ' ';
+        command += " \"";
         command += to_append;
+        command += '\"';
         internal_append_to_command(std::forward<T>(command), std::forward<Args>(other)...);
     }
 
@@ -68,12 +69,13 @@ namespace monobind
         template<typename... Paths>
         void build_library(const char* library_name, Paths&&... paths)
         {
-            std::string command = m_compiler_path;
+            std::string command = '\"' + m_compiler_path;
             internal_append_to_command(command, std::forward<Paths>(paths)...);
 
             command += " -target:library";
-            command += " -out:";
+            command += " -out:\"";
             command += library_name;
+            command += "\"\"";
 
             std::system(command.c_str());
         }

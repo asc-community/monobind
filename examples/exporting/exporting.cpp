@@ -13,6 +13,7 @@ struct vec3
 
     vec3 normalized() const
     {
+        auto length = std::sqrt(x * x + y * y + z * z);
         return vec3{ x / length, y / length, z / length, 1.0f };
     }
 };
@@ -36,10 +37,12 @@ public:
 
 int main()
 {
-    monobind::mono mono(MONOBIND_MONO_ROOT);
+    monobind::mono mono("C:/Program Files/Mono");
     mono.init_jit("ExportingExample");
 
-    std::ofstream codegen("D:/repos/monobind/examples/exporting/CodeGen.cs");
+    const char* codegen_filepath = "D:/repos/monobind/examples/exporting/CodeGen.cs";
+    const char* sample_filepath = "D:/repos/monobind/examples/exporting/SampleFile.cs";
+    std::ofstream codegen(codegen_filepath);
 
     monobind::code_generator gen(mono, codegen);
 
@@ -63,8 +66,21 @@ int main()
         ;
 
 
-    gen.generate_static_method<widget, void(int, std::string)>("Foo", [](int, std::string) {});
+    codegen.close();
 
+    monobind::compiler compiler(mono.get_root_dir());
+    compiler.build_library("CodeGen.dll", codegen_filepath, sample_filepath);
+
+    mono.add_internal_call<widget()>("Program::GetWidget()", []
+        {
+            widget w;
+            w.width = 10;
+            return w;
+        });
+
+    monobind::assembly assembly(mono.get_domain(), "CodeGen.dll");
+    auto main_method = assembly.get_method("Program::Main()").as_function<void()>();
+    main_method();
 
     return 0;
 }
