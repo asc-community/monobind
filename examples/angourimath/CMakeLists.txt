@@ -13,5 +13,5 @@ foreach(CURRENT_DLL IN LISTS DLL_LIST)
         copy ${CMAKE_CURRENT_SOURCE_DIR}/${CURRENT_DLL} "${CMAKE_CURRENT_BINARY_DIR}"
     )
 endforeach()
-
+add_mono_dll_copy_command(angourimath)
 target_include_directories(angourimath PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../include)

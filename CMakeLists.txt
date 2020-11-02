@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD 14)
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
+# Uncomment this if mono executables are not required
+# SET(MONO_ONLY_LIBRARIES_REQUIRED ON CACHE BOOL "" FORCE)
 find_package(Mono REQUIRED)
 
 if(MONO_FOUND)
@@ -28,6 +30,7 @@ if(NOT MONOBIND_ENABLE_EXCEPTIONS)
 endif()
 
 if (MONOBIND_BUILD_EXAMPLES)
+    include(ModuleMonoDllCopy)
     add_subdirectory(examples/sandbox)
     add_subdirectory(examples/simple_function_call)
     add_subdirectory(examples/method_parameters)
