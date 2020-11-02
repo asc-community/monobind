@@ -4,5 +4,5 @@ add_custom_command(TARGET simple_function_call POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E
     copy ${CMAKE_CURRENT_SOURCE_DIR}/"SimpleFunctionCall.cs" "${CMAKE_CURRENT_BINARY_DIR}"
 )
-
+add_mono_dll_copy_command(simple_function_call)
 target_include_directories(simple_function_call PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../include)
